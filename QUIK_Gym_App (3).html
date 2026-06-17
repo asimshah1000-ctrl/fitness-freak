@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>QUIK Training App</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;padding:16px}
+h1{font-size:28px;font-weight:700;margin-bottom:4px}
+.sub{color:#666;font-size:13px;margin-bottom:20px}
+.card{background:#1A1A1A;border:1px solid #2E2E2E;border-radius:14px;padding:16px;margin-bottom:12px}
+.pbar{height:8px;background:#2E2E2E;border-radius:4px;overflow:hidden;margin-bottom:6px}
+.pfill{height:100%;background:#D85A30;border-radius:4px}
+.pct{font-size:12px;color:#555}
+.rtrow{display:flex;gap:8px}
+.rtbtn{flex:1;padding:10px;border-radius:10px;border:none;background:#2A2A2A;color:#777;font-weight:700;font-size:13px;cursor:pointer}
+.rtbtn.sel{background:#D85A30;color:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.dcard{background:#1A1A1A;border:1px solid #2E2E2E;border-radius:14px;padding:14px;cursor:pointer;position:relative;overflow:hidden;transition:transform .1s}
+.dcard:active{transform:scale(.97)}
+.dbar{position:absolute;left:0;top:0;bottom:0;width:4px}
+.dnum{font-size:10px;color:#555;letter-spacing:.09em;margin-bottom:4px}
+.dname{font-size:22px;font-weight:700;margin-bottom:4px}
+.dfocus{font-size:11px;color:#666;line-height:1.4;margin-bottom:10px}
+.full{grid-column:span 2}
+.resetbtn{width:100%;padding:12px;border-radius:12px;background:transparent;border:1px solid #2E2E2E;color:#555;cursor:pointer;font-size:13px;font-weight:600;margin-top:4px;display:none}
+.foot{text-align:center;margin-top:20px;font-size:11px;color:#333}
+#scrDay{display:none}
+.tmrbar{background:#111;border-bottom:2px solid #D85A30;padding:12px 16px;position:sticky;top:0;z-index:10;display:none;align-items:center;gap:10px}
+.tmrinner{flex:1}
+.tmrlbl{font-size:12px;color:#888;margin-bottom:4px}
+.tmrcount{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.tmrpbar{height:5px;background:#2E2E2E;border-radius:3px;overflow:hidden;margin-top:4px}
+.tmrfill{height:100%;background:#D85A30;border-radius:3px;transition:width 1s linear}
+.skipbtn{background:#2A2A2A;border:none;color:#888;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px;font-weight:700}
+.dhdr{padding:16px;border-bottom:1px solid #1E1E1E}
+.backbtn{background:rgba(255,255,255,.08);border:none;color:#CCC;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:13px;margin-bottom:12px;display:inline-block}
+.hdrlbl{font-size:11px;font-weight:700;letter-spacing:.12em;margin-bottom:4px}
+.hdrname{font-size:30px;font-weight:700;margin-bottom:2px}
+.hdrfocus{font-size:13px;color:#888;margin-bottom:12px}
+.hdrprog{display:flex;align-items:center;gap:10px}
+.hdrprogbar{flex:1;height:5px;background:#1E1E1E;border-radius:3px;overflow:hidden}
+.hdrprogfill{height:100%;border-radius:3px;transition:width .3s}
+.hdrprogsets{font-size:13px;color:#777;font-weight:700}
+.exlist{padding:12px 16px 30px}
+.excard{border-radius:14px;margin-bottom:10px;overflow:hidden;border:1px solid #2E2E2E;background:#1A1A1A}
+.exhead{padding:14px;cursor:pointer;display:flex;align-items:center;gap:12px}
+.exnum{width:34px;height:34px;border-radius:9px;background:#252525;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#666}
+.exinfo{flex:1;min-width:0}
+.exname{font-size:14px;font-weight:700;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exbadges{display:flex;gap:6px;align-items:center}
+.bcable{font-size:11px;padding:3px 7px;border-radius:20px;background:#071830;color:#5AABF0;font-weight:700}
+.bmachine{font-size:11px;padding:3px 7px;border-radius:20px;background:#251400;color:#E09A20;font-weight:700}
+.exreps{font-size:12px;color:#666;font-weight:700}
+.exprog{text-align:right;flex-shrink:0}
+.exprognum{font-size:16px;font-weight:700;color:#666}
+.exarrow{font-size:15px;color:#444;margin-top:3px}
+.exdetail{border-top:1px solid #252525;display:none}
+.eximg{width:100%;max-height:185px;object-fit:cover;object-position:top;display:block;background:#111;border-bottom:1px solid #1E1E1E}
+.exdetailbody{padding:14px}
+.formcue{border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid transparent}
+.formcuelbl{font-size:10px;font-weight:700;letter-spacing:.1em;margin-bottom:6px}
+.formcuetxt{font-size:13px;color:#CCC;line-height:1.6}
+.muscles{font-size:12px;color:#666;margin-bottom:12px}
+.musclesval{color:#999;font-weight:700}
+.wt{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.wtinput{flex:1;background:#111;border:1px solid #2E2E2E;border-radius:9px;padding:9px 12px;color:#F2F2F2;font-size:14px}
+.wtinput:focus{outline:none;border-color:#555}
+.setslbl{font-size:11px;color:#555;font-weight:700;letter-spacing:.1em;margin-bottom:10px}
+.setsrow{display:flex;gap:8px;flex-wrap:wrap}
+.setbtn{width:54px;height:54px;border-radius:12px;border:1px solid #333;background:#141414;color:#666;font-weight:700;font-size:16px;cursor:pointer;transition:background .15s,color .15s}
+.setbtn:active{transform:scale(.9)}
+.setbtn.done{border:none;color:#fff}
+.restcard{background:#1A1A1A;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;border-left:4px solid;border-top:1px solid #2E2E2E;border-right:1px solid #2E2E2E;border-bottom:1px solid #2E2E2E}
+.resticon{font-size:22px;flex-shrink:0;margin-top:2px}
+.resttitle{font-size:14px;font-weight:700;margin-bottom:4px}
+.restbody{font-size:13px;color:#777;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div id="scrHome">
+  <div style="padding:8px 0 0">
+    <div style="font-size:11px;font-weight:700;color:#444;letter-spacing:.12em;margin-bottom:4px">QUIK TRANSPORT</div>
+    <h1>Training Plan &#x1F4AA;</h1>
+    <div class="sub">Machine &amp; cable only &middot; ~20 sets per muscle</div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;color:#888">Weekly progress</span>
+        <span style="font-size:14px;font-weight:700" id="homeSets">0 / 145 sets</span>
+      </div>
+      <div class="pbar"><div class="pfill" id="homeBar" style="width:0%"></div></div>
+      <div class="pct" id="homePct">0% complete</div>
+    </div>
+    <div class="card">
+      <div style="font-size:11px;font-weight:700;color:#555;letter-spacing:.1em;margin-bottom:10px">REST TIMER</div>
+      <div class="rtrow">
+        <button class="rtbtn" onclick="setRest(60)">60s</button>
+        <button class="rtbtn sel" onclick="setRest(90)">90s</button>
+        <button class="rtbtn" onclick="setRest(120)">120s</button>
+        <button class="rtbtn" onclick="setRest(180)">180s</button>
+      </div>
+    </div>
+    <div class="grid" id="dayGrid"></div>
+    <button class="resetbtn" id="resetBtn" onclick="resetWeek()">&#x1F504; Reset week</button>
+    <div class="foot">QUIK Training App &middot; Push Pull Legs Upper Lower</div>
+  </div>
+</div>
+
+<div id="scrDay">
+  <div class="tmrbar" id="tmrBar">
+    <span style="font-size:20px">&#x23F1;&#xFE0F;</span>
+    <div class="tmrinner">
+      <div class="tmrlbl">Rest timer</div>
+      <div class="tmrcount" id="tmrCount">90s</div>
+      <div class="tmrpbar"><div class="tmrfill" id="tmrFill" style="width:100%"></div></div>
+    </div>
+    <button class="skipbtn" onclick="skipTimer()">Skip &#x23ED;</button>
+  </div>
+  <div class="dhdr" id="dayHdr">
+    <button class="backbtn" onclick="goHome()">&larr; Wapis</button>
+    <div class="hdrlbl" id="hdrNum">DAY 1</div>
+    <div class="hdrname" id="hdrName">PUSH</div>
+    <div class="hdrfocus" id="hdrFocus"></div>
+    <div class="hdrprog">
+      <div class="hdrprogbar"><div class="hdrprogfill" id="hdrProgFill"></div></div>
+      <span class="hdrprogsets" id="hdrProgSets">0/27</span>
+    </div>
+  </div>
+  <div id="restSection" style="display:none;padding:14px 16px">
+    <div style="font-size:13px;color:#666;margin-bottom:12px;line-height:1.5">Rest day hai &#x2014; recovery equally important hai training se &#x1F4A4;</div>
+    <div id="restTips"></div>
+  </div>
+  <div class="exlist" id="exList"></div>
+</div>
+
+<script>
+var IMGS={"Machine Chest Press": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Chest_Press/0.jpg","Pec Deck Flye": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pec_Deck_Fly/0.jpg","Low-to-High Cable Flye": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Low_Cable_Crossover/0.jpg","Seated Machine OHP": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Shoulder_Press/0.jpg","Cable Lateral Raise": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Lateral_Raise/0.jpg","Cable Pushdown (V-bar)": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg","Cable Overhead Extension": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rope_Overhead_Triceps_Extension/0.jpg","Machine Lat Pulldown (Wide)": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Full_Range-Of-Motion_Lat_Pulldown/0.jpg","Chest-Supported Row": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg","Seated Cable Row (Neutral)": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elevated_Cable_Rows/0.jpg","Reverse Pec Deck": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Flyes/0.jpg","Cable Face Pull": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg","Machine Preacher Curl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Preacher_Curls/0.jpg","Cable Hammer Curl (Rope)": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Hammer_Curls_-_Rope_Attachment/0.jpg","Leg Press (Narrow, Low Feet)": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Narrow_Stance_Leg_Press/0.jpg","Hack Squat Machine": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hack_Squat/0.jpg","Leg Extension": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg","Lying Leg Curl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/0.jpg","Seated Leg Curl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Leg_Curl/0.jpg","Machine Hip Thrust": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hip_Thrust/0.jpg","Seated Calf Raise": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Seated_Calf_Raise/0.jpg","Incline Machine Press": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Incline_Chest_Press/0.jpg","High-to-Low Cable Flye": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crossover/0.jpg","Machine Lat Pulldown": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg","Cable Lateral Raise (1-arm)": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Lateral_Raise/0.jpg","Hack Squat (Wider Stance)": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hack_Squat/0.jpg","Leg Press (Wide, High Feet)": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Narrow_Stance_Leg_Press/0.jpg","Cable Pull-Through": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull_Through/0.jpg","Standing Machine Calf Raise": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg","Cable EZ-Bar Curl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Curl/0.jpg","Cable Rope Pushdown": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg"};
+
+var DAYS=[
+  {id:"d1",num:1,name:"PUSH",color:"#D85A30",bg:"#1E0E07",focus:"Chest · Side Delts · Triceps",total:27,isRest:false,ex:[
+    {n:"Machine Chest Press",t:"Machine",s:4,r:"8–10",m:"Chest, Triceps, Front delt",note:"Full ROM; pause 1s at chest; neutral spine throughout"},
+    {n:"Pec Deck Flye",t:"Machine",s:4,r:"12–15",m:"Chest",note:"Peak contraction at midline; hold 1s; slow controlled eccentric"},
+    {n:"Low-to-High Cable Flye",t:"Cable",s:3,r:"12–15",m:"Upper chest (clavicular head)",note:"Arms cross midline at top; constant cable tension throughout"},
+    {n:"Seated Machine OHP",t:"Machine",s:4,r:"8–10",m:"Side delt, Front delt, Triceps",note:"Elbows 30deg anterior to torso; avoids subacromial impingement"},
+    {n:"Cable Lateral Raise",t:"Cable",s:5,r:"15–20",m:"Side delt",note:"Cable behind body; constant tension; minimal trap involvement"},
+    {n:"Cable Pushdown (V-bar)",t:"Cable",s:4,r:"12–15",m:"Triceps lateral and medial head",note:"Full elbow extension; do not lean forward into the cable"},
+    {n:"Cable Overhead Extension",t:"Cable",s:3,r:"12–15",m:"Triceps long head",note:"Long head maximally loaded at stretch; keep elbows tucked in"}
+  ]},
+  {id:"d2",num:2,name:"PULL",color:"#2E88D9",bg:"#07111E",focus:"Lats · Mid-Back · Biceps · Rear Delts",total:27,isRest:false,ex:[
+    {n:"Machine Lat Pulldown (Wide)",t:"Machine",s:4,r:"8–10",m:"Lats",note:"Scapular depression initiates the pull; chest proud throughout"},
+    {n:"Chest-Supported Row",t:"Machine",s:4,r:"8–10",m:"Mid-back, Rhomboids, Lats",note:"Chest pad eliminates lumbar load; elbows close = lat emphasis"},
+    {n:"Seated Cable Row (Neutral)",t:"Cable",s:4,r:"10–12",m:"Mid-back, Lats",note:"Upright torso; pause and squeeze hard at peak contraction"},
+    {n:"Reverse Pec Deck",t:"Machine",s:4,r:"15–20",m:"Rear delt",note:"Arms parallel to floor; slight elbow bend; no trap shrug"},
+    {n:"Cable Face Pull",t:"Cable",s:4,r:"15–20",m:"Rear delt, Upper traps",note:"Pull to forehead level; external rotate at end of movement"},
+    {n:"Machine Preacher Curl",t:"Machine",s:4,r:"10–12",m:"Biceps",note:"Full stretch at bottom; no elbow lifting off the pad"},
+    {n:"Cable Hammer Curl (Rope)",t:"Cable",s:3,r:"10–12",m:"Biceps, Brachialis",note:"Neutral grip; targets brachialis and brachioradialis"}
+  ]},
+  {id:"d3",num:3,name:"LEGS",color:"#4A8A15",bg:"#0A1505",focus:"Quads · Hamstrings · Glutes · Calves",total:30,isRest:false,ex:[
+    {n:"Leg Press (Narrow, Low Feet)",t:"Machine",s:4,r:"8–10",m:"Quads",note:"Feet low on platform = quad emphasis; deep ROM; no spinal load"},
+    {n:"Hack Squat Machine",t:"Machine",s:4,r:"8–10",m:"Quads, Glutes",note:"Back fully supported; knees track over toes; full depth"},
+    {n:"Leg Extension",t:"Machine",s:4,r:"12–15",m:"Quads (Rectus Femoris)",note:"1s hold at peak; only exercise training RF at full extension"},
+    {n:"Lying Leg Curl",t:"Machine",s:4,r:"10–12",m:"Hamstrings (proximal)",note:"Hip extended = maximises proximal hamstring stretch under load"},
+    {n:"Seated Leg Curl",t:"Machine",s:4,r:"12–15",m:"Hamstrings (distal)",note:"Hip flexed = maximises distal and short head stretch"},
+    {n:"Machine Hip Thrust",t:"Machine",s:4,r:"10–12",m:"Glutes",note:"Posterior pelvic tilt at top; hold 2s with glute squeeze"},
+    {n:"Seated Calf Raise",t:"Machine",s:6,r:"15–20",m:"Soleus",note:"3s slow eccentric; full plantar stretch; knee bent = soleus dominant"}
+  ]},
+  {id:"d4",num:4,name:"REST",color:"#7A7977",bg:"#141413",focus:"Recovery · Mobility · Sleep",total:0,isRest:true,ex:[]},
+  {id:"d5",num:5,name:"UPPER",color:"#7060D0",bg:"#100D20",focus:"2nd Stimulus — Chest · Back · Shoulders · Arms",total:32,isRest:false,ex:[
+    {n:"Incline Machine Press",t:"Machine",s:4,r:"8–10",m:"Upper chest, Front delt, Triceps",note:"30-45deg angle targets clavicular head; distinct from Day 1 flat"},
+    {n:"High-to-Low Cable Flye",t:"Cable",s:4,r:"12–15",m:"Chest (sternal head)",note:"Opposite vector to Day 1; hits lower sternal fibres"},
+    {n:"Machine Lat Pulldown",t:"Machine",s:4,r:"8–10",m:"Lats, Biceps",note:"Pronated wide grip; scapular depression before elbow drive"},
+    {n:"Chest-Supported Row",t:"Machine",s:4,r:"10–12",m:"Mid-back, Rhomboids",note:"Elbows flared = more rhomboids vs Day 2 close-elbow style"},
+    {n:"Cable Lateral Raise (1-arm)",t:"Cable",s:5,r:"15–20",m:"Side delt",note:"Arm starts across body = longer effective lever arm"},
+    {n:"Reverse Pec Deck",t:"Machine",s:4,r:"15–20",m:"Rear delt",note:"Scapular retraction at peak; arms at 90deg to torso"},
+    {n:"Cable EZ-Bar Curl",t:"Cable",s:4,r:"10–12",m:"Biceps",note:"Constant tension at bottom unlike dumbbells"},
+    {n:"Cable Rope Pushdown",t:"Cable",s:3,r:"12–15",m:"Triceps lateral head",note:"Flare hands at bottom for lateral head peak contraction"}
+  ]},
+  {id:"d6",num:6,name:"LOWER",color:"#15897A",bg:"#051512",focus:"2nd Stimulus — Quads · Hams · Glutes · Calves",total:29,isRest:false,ex:[
+    {n:"Hack Squat (Wider Stance)",t:"Machine",s:4,r:"8–10",m:"Quads, Glutes",note:"Wider stance shifts load posterior vs Day 3 narrow stance"},
+    {n:"Leg Extension",t:"Machine",s:4,r:"12–15",m:"Quads",note:"Reinforces quad development; full extension at top"},
+    {n:"Leg Press (Wide, High Feet)",t:"Machine",s:4,r:"10–12",m:"Glutes, Hams",note:"High foot position = posterior chain dominant"},
+    {n:"Seated Leg Curl",t:"Machine",s:4,r:"10–12",m:"Hamstrings",note:"Loaded lengthening; full eccentric stretch on the way down"},
+    {n:"Machine Hip Thrust",t:"Machine",s:4,r:"10–12",m:"Glutes",note:"Drive through heels; full hip extension at the top"},
+    {n:"Cable Pull-Through",t:"Cable",s:3,r:"15",m:"Glutes, Hams",note:"Hip hinge pattern; minimal spinal load"},
+    {n:"Standing Machine Calf Raise",t:"Machine",s:6,r:"12–15",m:"Gastrocnemius",note:"Straight knee = gastroc dominant; complements Day 3 soleus work"}
+  ]},
+  {id:"d7",num:7,name:"REST",color:"#7A7977",bg:"#141413",focus:"Recovery · Mobility · Sleep",total:0,isRest:true,ex:[]}
+];
+
+var REST_TIPS=[
+  {icon:"&#x1F319;",title:"Sleep 7-9 hours",body:"GH and IGF-1 peak during deep sleep — primary driver of muscle protein synthesis"},
+  {icon:"&#x1F6B6;",title:"Light walking",body:"Promotes blood flow and nutrient delivery without accumulating fatigue"},
+  {icon:"&#x1F9D8;",title:"Mobility work",body:"Hip flexors, thoracic spine, shoulder capsule — 15-20 min"},
+  {icon:"&#x1F969;",title:"Protein target",body:"1.6-2.2g per kg bodyweight; spread across 4+ meals throughout the day"},
+  {icon:"&#x1F4A7;",title:"Stay hydrated",body:"3-4L water daily — critical in Dubai heat; add electrolytes on training days"},
+  {icon:"&#x1F4CA;",title:"Log your weights",body:"Progressive overload is the #1 driver of hypertrophy — track every session"}
+];
+
+var TOTAL=145,done={},weights={},restSec=90;
+var timerInt=null,timerRem=0,timerTot=0;
+var curDay=null,openEx=null;
+
+function setRest(s){
+  restSec=s;
+  document.querySelectorAll(".rtbtn").forEach(function(b){b.classList.toggle("sel",parseInt(b.textContent)===s);});
+}
+
+function startTimer(){
+  clearInterval(timerInt);
+  timerRem=restSec;timerTot=restSec;
+  var bar=document.getElementById("tmrBar");
+  bar.style.display="flex";
+  var d=DAYS.find(function(x){return x.id===curDay;});
+  if(d){bar.style.borderBottomColor=d.color;document.getElementById("tmrFill").style.background=d.color;}
+  updateTimerUI();
+  timerInt=setInterval(function(){timerRem--;if(timerRem<=0){skipTimer();return;}updateTimerUI();},1000);
+}
+
+function updateTimerUI(){
+  document.getElementById("tmrCount").textContent=timerRem+"s";
+  document.getElementById("tmrFill").style.width=Math.round(timerRem/timerTot*100)+"%";
+}
+
+function skipTimer(){clearInterval(timerInt);document.getElementById("tmrBar").style.display="none";}
+
+function totalDone(){return Object.keys(done).filter(function(k){return done[k];}).length;}
+
+function getProgress(d){
+  if(!d.ex.length)return null;
+  var tot=0,got=0;
+  for(var i=0;i<d.ex.length;i++){tot+=d.ex[i].s;for(var j=0;j<d.ex[i].s;j++){if(done[d.id+"_"+i+"_"+j])got++;}}
+  return{tot:tot,got:got,pct:got/tot};
+}
+
+function goHome(){skipTimer();openEx=null;document.getElementById("scrHome").style.display="block";document.getElementById("scrDay").style.display="none";renderHome();}
+
+function openDay(id){curDay=id;openEx=null;document.getElementById("scrHome").style.display="none";document.getElementById("scrDay").style.display="block";renderDay();}
+
+function toggleEx(ei){openEx=(openEx===ei)?null:ei;renderDay();}
+
+function toggleSet(dayId,ei,si){var k=dayId+"_"+ei+"_"+si;done[k]=!done[k];if(done[k])startTimer();renderDay();}
+
+function saveWeight(dayId,ei,val){weights[dayId+"_"+ei]=val;}
+
+function resetWeek(){if(!confirm("Reset karna chahte ho? Sab progress clear ho jayegi."))return;done={};weights={};renderHome();}
+
+function renderHome(){
+  var td=totalDone();
+  var pct=Math.round(td/TOTAL*100);
+  document.getElementById("homeSets").textContent=td+" / "+TOTAL+" sets";
+  document.getElementById("homeBar").style.width=pct+"%";
+  document.getElementById("homePct").textContent=pct+"% complete";
+  document.getElementById("resetBtn").style.display=td>0?"block":"none";
+  var grid=document.getElementById("dayGrid");
+  grid.innerHTML="";
+  for(var i=0;i<DAYS.length;i++){
+    var d=DAYS[i];
+    var p=getProgress(d);
+    var allDone=p&&p.got===p.tot&&p.tot>0;
+    var div=document.createElement("div");
+    div.className="dcard"+(d.isRest&&d.num===7?" full":"");
+    if(allDone){div.style.background="rgba(255,255,255,.04)";div.style.borderColor=d.color+"55";}
+    var progHtml=p?("<div style='height:3px;background:#2A2A2A;border-radius:2px;overflow:hidden;margin-bottom:5px'><div style='height:100%;width:"+Math.round(p.pct*100)+"%;background:"+d.color+";border-radius:2px'></div></div><div style='font-size:11px;color:#555'>"+p.got+"/"+p.tot+" sets</div>"):"";
+    var checkHtml=allDone?"<div style='position:absolute;top:12px;right:12px;font-size:20px'>&#x2705;</div>":"";
+    div.innerHTML="<div class='dbar' style='background:"+d.color+"'></div><div class='dnum'>DAY "+d.num+"</div><div class='dname' style='color:"+(allDone?d.color:"#F2F2F2")+"'>"+d.name+"</div><div class='dfocus'>"+d.focus+"</div>"+progHtml+checkHtml;
+    (function(id){div.onclick=function(){openDay(id);};})(d.id);
+    grid.appendChild(div);
+  }
+}
+
+function renderDay(){
+  var d=DAYS.find(function(x){return x.id===curDay;});
+  if(!d)return;
+  var p=getProgress(d);
+  var hdr=document.getElementById("dayHdr");
+  hdr.style.background=d.bg;
+  document.getElementById("hdrNum").textContent="DAY "+d.num;
+  document.getElementById("hdrNum").style.color=d.color;
+  document.getElementById("hdrName").textContent=d.name;
+  document.getElementById("hdrName").style.color=d.color;
+  document.getElementById("hdrFocus").textContent=d.focus;
+  if(p){
+    document.getElementById("hdrProgFill").style.width=Math.round(p.pct*100)+"%";
+    document.getElementById("hdrProgFill").style.background=d.color;
+    document.getElementById("hdrProgSets").textContent=p.got+"/"+p.tot+" sets";
+  }
+  if(d.isRest){
+    document.getElementById("restSection").style.display="block";
+    document.getElementById("exList").style.display="none";
+    var tips=document.getElementById("restTips");
+    tips.innerHTML="";
+    for(var t=0;t<REST_TIPS.length;t++){
+      var tp=REST_TIPS[t];
+      var td2=document.createElement("div");
+      td2.className="restcard";
+      td2.style.borderLeftColor=d.color;
+      td2.innerHTML="<span class='resticon'>"+tp.icon+"</span><div><div class='resttitle'>"+tp.title+"</div><div class='restbody'>"+tp.body+"</div></div>";
+      tips.appendChild(td2);
+    }
+    return;
+  }
+  document.getElementById("restSection").style.display="none";
+  document.getElementById("exList").style.display="block";
+  var list=document.getElementById("exList");
+  list.innerHTML="";
+  for(var i=0;i<d.ex.length;i++){
+    var ex=d.ex[i];
+    var got=0;
+    for(var j=0;j<ex.s;j++){if(done[d.id+"_"+i+"_"+j])got++;}
+    var allS=got===ex.s;
+    var isOpen=openEx===i;
+    var setBtns="";
+    for(var j=0;j<ex.s;j++){
+      var isDone=done[d.id+"_"+i+"_"+j];
+      setBtns+="<button class='setbtn"+(isDone?" done":"")+"'";
+      if(isDone)setBtns+=" style='background:"+d.color+"'";
+      setBtns+=" onclick='toggleSet(\""+d.id+"\","+i+","+j+")'>"+(isDone?"&#x2713;":(j+1))+"</button>";
+    }
+    var imgUrl=IMGS[ex.n]||"";
+    var imgBlock=imgUrl?"<img class='eximg' src='"+imgUrl+"' loading='lazy' alt='"+ex.n+"' onerror="this.style.display='none'">":"";
+    var detail="";
+    if(isOpen){
+      detail="<div class='exdetail' style='display:block'>";
+      detail+=imgBlock;
+      detail+="<div class='exdetailbody'>";
+      detail+="<div class='formcue' style='background:"+d.bg+";border-color:"+d.color+"30'>";
+      detail+="<div class='formcuelbl' style='color:"+d.color+"'>&#x1F4CB; FORM CUE</div>";
+      detail+="<div class='formcuetxt'>"+ex.note+"</div></div>";
+      detail+="<div class='muscles'>&#x1F4AA; Muscles: <span class='musclesval'>"+ex.m+"</span></div>";
+      detail+="<div class='wt'><span style='font-size:17px'>&#x1F3CB;</span>";
+      detail+="<input class='wtinput' type='text' placeholder='Weight used e.g. 60 kg'";
+      detail+=" value='"+(weights[d.id+"_"+i]||"")+"'";
+      detail+=" oninput='saveWeight(\""+d.id+"\","+i+",this.value)'></div>";
+      detail+="<div class='setslbl'>TAP SET TO COMPLETE &rarr; TIMER STARTS</div>";
+      detail+="<div class='setsrow'>"+setBtns+"</div>";
+      detail+="</div></div>";
+    }
+    var card=document.createElement("div");
+    card.className="excard";
+    if(allS){card.style.background=d.bg;card.style.borderColor=d.color+"55";}
+    card.innerHTML="<div class='exhead' onclick='toggleEx("+i+")'>";
+    card.innerHTML+="<div class='exnum'"+(allS?" style='background:"+d.color+";color:#fff'":"")+">"+(allS?"&#x2713;":(i+1))+"</div>";
+    card.innerHTML+="<div class='exinfo'>";
+    card.innerHTML+="<div class='exname' style='color:"+(allS?d.color:"#F2F2F2")+"'>"+ex.n+"</div>";
+    card.innerHTML+="<div class='exbadges'><span class='"+(ex.t==="Cable"?"bcable":"bmachine")+"'>"+(ex.t==="Cable"?"&#x1F517; Cable":"&#x2699;&#xFE0F; Machine")+"</span>";
+    card.innerHTML+="<span class='exreps'>"+ex.s+" &times; "+ex.r+"</span></div></div>";
+    card.innerHTML+="<div class='exprog'><div class='exprognum' style='color:"+(allS?d.color:"#666")+"'>"+got+"/"+ex.s+"</div>";
+    card.innerHTML+="<div class='exarrow'>"+(isOpen?"&#x25B2;":"&#x25BC;")+"</div></div></div>"+detail;
+    list.appendChild(card);
+  }
+}
+
+renderHome();
+</script>
+</body>
+</html>
