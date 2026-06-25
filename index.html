@@ -90,6 +90,58 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
         <button class="rtbtn" onclick="setRest(180)">180s</button>
       </div>
     </div>
+    <div class="card" id="warmupCard" style="cursor:pointer;border-color:#D85A30">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:26px">&#128293;</span>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;margin-bottom:2px">Warmup &middot; 8-10 min</div>
+          <div style="font-size:12px;color:#888">Do this before every session &middot; tap to view</div>
+        </div>
+        <span style="font-size:18px;color:#444">&#9656;</span>
+      </div>
+    </div>
+    <div class="card" style="border-color:#15897A">
+      <div style="font-size:11px;font-weight:700;color:#15897A;letter-spacing:.1em;margin-bottom:12px">&#127942; FAT LOSS TARGETS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:#0D0D0D;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:#15897A">2000</div>
+          <div style="font-size:11px;color:#777;margin-top:2px">Calories / day</div>
+        </div>
+        <div style="background:#0D0D0D;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:#15897A">190g</div>
+          <div style="font-size:11px;color:#777;margin-top:2px">Protein / day</div>
+        </div>
+        <div style="background:#0D0D0D;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:#15897A">9,000</div>
+          <div style="font-size:11px;color:#777;margin-top:2px">Steps / day</div>
+        </div>
+        <div style="background:#0D0D0D;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:#15897A">1 kg</div>
+          <div style="font-size:11px;color:#777;margin-top:2px">Loss / week</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#555;margin-top:12px;line-height:1.5">Protein first every meal &middot; controlled carbs (1-2 roti) &middot; watch oil &amp; ghee &middot; zero sugary drinks &middot; weigh same time daily</div>
+    </div>
+    <div class="card" id="whoopCard" style="cursor:pointer;border-color:#3DBE8B">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:26px">&#128153;</span>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;margin-bottom:2px">WHOOP today <span id="whoopMini" style="color:#3DBE8B;font-weight:700"></span></div>
+          <div style="font-size:12px;color:#888">Recovery, strain, sleep &middot; tap to log</div>
+        </div>
+        <span style="font-size:18px;color:#444">&#9656;</span>
+      </div>
+    </div>
+    <div class="card" id="dietCard" style="cursor:pointer;border-color:#15897A">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:26px">&#9878;</span>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;margin-bottom:2px">Weight &amp; diet log <span id="dietMini" style="color:#15897A;font-weight:700"></span></div>
+          <div style="font-size:12px;color:#888">Daily weight, calories, protein, steps</div>
+        </div>
+        <span style="font-size:18px;color:#444">&#9656;</span>
+      </div>
+    </div>
     <div class="grid" id="dayGrid"></div>
     <button class="resetbtn" id="resetBtn" onclick="resetWeek()">Reset Week</button>
     <div class="foot">Fitness Freak &middot; Push Pull Legs Upper Lower</div>
@@ -121,6 +173,45 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
     <div id="restTips"></div>
   </div>
   <div class="exlist" id="exList"></div>
+</div>
+
+<div id="scrWarmup" style="display:none">
+  <div class="dhdr" style="background:#1E0E07">
+    <button class="backbtn" onclick="goHome()">&larr; Back</button>
+    <div class="hdrlbl" style="color:#D85A30">PRE-WORKOUT</div>
+    <div class="hdrname" style="color:#D85A30">WARMUP</div>
+    <div class="hdrfocus">General full-body &middot; 8-10 min before you lift</div>
+  </div>
+  <div class="exlist" id="warmupList"></div>
+</div>
+
+<div id="scrWhoop" style="display:none">
+  <div class="dhdr" style="background:#06140F">
+    <button class="backbtn" onclick="goHome()">&larr; Back</button>
+    <div class="hdrlbl" style="color:#3DBE8B">RECOVERY</div>
+    <div class="hdrname" style="color:#3DBE8B">WHOOP</div>
+    <div class="hdrfocus" id="whoopDate"></div>
+  </div>
+  <div style="padding:16px">
+    <div style="font-size:12px;color:#666;line-height:1.6;margin-bottom:16px">Open your WHOOP app, read today's numbers, and enter them here. Saved on your phone &middot; one entry per day.</div>
+    <div id="whoopInputs"></div>
+    <div style="font-size:11px;color:#555;letter-spacing:.1em;font-weight:700;margin:20px 0 10px">LAST 7 DAYS</div>
+    <div id="whoopHistory"></div>
+  </div>
+</div>
+
+<div id="scrDiet" style="display:none">
+  <div class="dhdr" style="background:#051512">
+    <button class="backbtn" onclick="goHome()">&larr; Back</button>
+    <div class="hdrlbl" style="color:#15897A">DAILY LOG</div>
+    <div class="hdrname" style="color:#15897A">WEIGHT &amp; DIET</div>
+    <div class="hdrfocus" id="dietDate"></div>
+  </div>
+  <div style="padding:16px">
+    <div id="dietInputs"></div>
+    <div style="font-size:11px;color:#555;letter-spacing:.1em;font-weight:700;margin:20px 0 10px">LAST 7 DAYS</div>
+    <div id="dietHistory"></div>
+  </div>
 </div>
 
 <script>
@@ -220,12 +311,42 @@ var REST_TIPS = [
   {icon:"📊",title:"Log your weights",body:"Progressive overload is the #1 driver of hypertrophy - track every session"}
 ];
 
+var WARMUP = [
+  {icon:"&#127939;",title:"Light cardio",detail:"5 min easy incline walk, cycle or elliptical. Raises core temp and heart rate, primes blood flow to muscles.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elliptical_Trainer/0.jpg"},
+  {icon:"&#128064;",title:"Band pull-aparts",detail:"2 x 15. Opens up shoulders and warms the rotator cuff before any pressing or pulling.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Band_Pull_Apart/0.jpg"},
+  {icon:"&#129495;",title:"Bodyweight squats",detail:"2 x 15. Greases the knees and hips, wakes up the glutes and quads for leg or lower days.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Squat/0.jpg"},
+  {icon:"&#128081;",title:"Cat-cow stretch",detail:"1 min. Mobilises the spine, especially good if you sit a lot during the day.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cat_Stretch/0.jpg"},
+  {icon:"&#128137;",title:"Standing hip circles",detail:"10 each direction. Loosens the hips before squats, leg press and hip thrusts.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Hip_Circles/0.jpg"},
+  {icon:"&#127947;",title:"Warmup sets on first exercise",detail:"2 light sets (50% then 70% of working weight) before your first real set. Most important step - never skip it.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg"}
+];
 var TOTAL = 145, done = {}, weights = {}, restSec = 90;
+var whoop = {}, diet = {};
 var timerInt = null, timerRem = 0, timerTot = 0;
 var curDay = null, openEx = null;
+var todayKey = new Date().toISOString().slice(0,10);
+
+function saveAll() {
+  try {
+    localStorage.setItem("ff_done", JSON.stringify(done));
+    localStorage.setItem("ff_weights", JSON.stringify(weights));
+    localStorage.setItem("ff_whoop", JSON.stringify(whoop));
+    localStorage.setItem("ff_diet", JSON.stringify(diet));
+    localStorage.setItem("ff_rest", String(restSec));
+  } catch (e) {}
+}
+function loadAll() {
+  try {
+    done = JSON.parse(localStorage.getItem("ff_done") || "{}");
+    weights = JSON.parse(localStorage.getItem("ff_weights") || "{}");
+    whoop = JSON.parse(localStorage.getItem("ff_whoop") || "{}");
+    diet = JSON.parse(localStorage.getItem("ff_diet") || "{}");
+    var r = localStorage.getItem("ff_rest"); if (r) restSec = parseInt(r);
+  } catch (e) {}
+}
 
 function setRest(s) {
   restSec = s;
+  saveAll();
   document.querySelectorAll(".rtbtn").forEach(function(b) {
     b.classList.toggle("sel", parseInt(b.textContent) === s);
   });
@@ -281,7 +402,31 @@ function goHome() {
   skipTimer(); openEx = null;
   document.getElementById("scrHome").style.display = "block";
   document.getElementById("scrDay").style.display = "none";
+  document.getElementById("scrWarmup").style.display = "none";
+  document.getElementById("scrWhoop").style.display = "none";
+  document.getElementById("scrDiet").style.display = "none";
   renderHome();
+}
+
+function openWarmup() {
+  document.getElementById("scrHome").style.display = "none";
+  document.getElementById("scrDay").style.display = "none";
+  document.getElementById("scrWarmup").style.display = "block";
+  var list = document.getElementById("warmupList");
+  while (list.firstChild) list.removeChild(list.firstChild);
+  for (var i = 0; i < WARMUP.length; i++) {
+    var w = WARMUP[i];
+    var rc = el("div", "excard");
+    rc.style.borderColor = "#D85A3055";
+    var imgHtml = "";
+    if (w.img) imgHtml = "<img class='eximg' src='" + w.img + "' alt='" + w.title + "' loading='lazy' onerror=\"this.style.display='none'\">";
+    rc.innerHTML = imgHtml +
+      "<div style='padding:14px;display:flex;gap:12px;align-items:flex-start'>" +
+      "<span style='font-size:22px;flex-shrink:0'>" + w.icon + "</span>" +
+      "<div><div style='font-size:14px;font-weight:700;margin-bottom:4px;color:#D85A30'>" + (i+1) + ". " + w.title + "</div>" +
+      "<div style='font-size:13px;color:#888;line-height:1.6'>" + w.detail + "</div></div></div>";
+    list.appendChild(rc);
+  }
 }
 
 function openDay(id) {
@@ -299,17 +444,20 @@ function toggleEx(ei) {
 function toggleSet(dayId, ei, si) {
   var k = dayId + "_" + ei + "_" + si;
   done[k] = !done[k];
+  saveAll();
   if (done[k]) startTimer();
   renderDay();
 }
 
 function saveWeight(dayId, ei, val) {
   weights[dayId + "_" + ei] = val;
+  saveAll();
 }
 
 function resetWeek() {
   if (!confirm("Reset karna chahte ho?")) return;
   done = {}; weights = {};
+  saveAll();
   renderHome();
 }
 
@@ -318,6 +466,114 @@ function el(tag, cls, html) {
   if (cls) e.className = cls;
   if (html) e.innerHTML = html;
   return e;
+}
+
+var WHOOP_FIELDS = [
+  {k:"recovery",label:"Recovery",unit:"%",color:"#3DBE8B",ph:"e.g. 68"},
+  {k:"strain",label:"Day strain",unit:"",color:"#E0A020",ph:"e.g. 12.4"},
+  {k:"sleep",label:"Sleep",unit:"hrs",color:"#7060D0",ph:"e.g. 7.5"},
+  {k:"hrv",label:"HRV",unit:"ms",color:"#2E88D9",ph:"e.g. 95"},
+  {k:"rhr",label:"Resting HR",unit:"bpm",color:"#D85A30",ph:"e.g. 54"}
+];
+var DIET_FIELDS = [
+  {k:"weight",label:"Weight",unit:"kg",color:"#15897A",ph:"e.g. 114.5"},
+  {k:"cal",label:"Calories",unit:"kcal",color:"#E0A020",ph:"target 2000"},
+  {k:"protein",label:"Protein",unit:"g",color:"#3DBE8B",ph:"target 190"},
+  {k:"steps",label:"Steps",unit:"",color:"#2E88D9",ph:"target 9000"}
+];
+
+function setField(store, key, field, val) {
+  if (!store[key]) store[key] = {};
+  if (val === "") delete store[key][field]; else store[key][field] = val;
+  saveAll();
+}
+
+function buildInputs(containerId, fields, store) {
+  var c = document.getElementById(containerId);
+  while (c.firstChild) c.removeChild(c.firstChild);
+  var rec = store[todayKey] || {};
+  for (var i = 0; i < fields.length; i++) {
+    var f = fields[i];
+    var row = el("div", "wt");
+    row.style.marginBottom = "12px";
+    var lbl = el("div", null, f.label + (f.unit ? " (" + f.unit + ")" : ""));
+    lbl.style.cssText = "width:120px;font-size:13px;color:#999;font-weight:700;flex-shrink:0";
+    row.appendChild(lbl);
+    var inp = document.createElement("input");
+    inp.className = "wtinput";
+    inp.type = "number";
+    inp.inputMode = "decimal";
+    inp.placeholder = f.ph;
+    inp.value = (rec[f.k] !== undefined) ? rec[f.k] : "";
+    inp.style.borderColor = (rec[f.k] !== undefined) ? f.color + "88" : "#2E2E2E";
+    (function(field, color){
+      inp.oninput = function(){
+        setField(store, todayKey, field, this.value);
+        this.style.borderColor = this.value === "" ? "#2E2E2E" : color + "88";
+        if (containerId === "whoopInputs") buildHistory("whoopHistory", WHOOP_FIELDS, whoop);
+        else buildHistory("dietHistory", DIET_FIELDS, diet);
+        updateMinis();
+      };
+    })(f.k, f.color);
+    row.appendChild(inp);
+    c.appendChild(row);
+  }
+}
+
+function buildHistory(containerId, fields, store) {
+  var c = document.getElementById(containerId);
+  while (c.firstChild) c.removeChild(c.firstChild);
+  var days = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(); d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0,10));
+  }
+  var any = false;
+  for (var x = 0; x < days.length; x++) {
+    var key = days[x];
+    var rec = store[key];
+    if (!rec || Object.keys(rec).length === 0) continue;
+    any = true;
+    var card = el("div", "restcard");
+    card.style.borderLeftColor = fields[0].color;
+    var dateLbl = (key === todayKey) ? "Today" : new Date(key).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+    var parts = [];
+    for (var y = 0; y < fields.length; y++) {
+      var fv = rec[fields[y].k];
+      if (fv !== undefined && fv !== "") parts.push("<span style='color:" + fields[y].color + ";font-weight:700'>" + fv + "</span> <span style='color:#666;font-size:11px'>" + (fields[y].unit || fields[y].label) + "</span>");
+    }
+    card.innerHTML = "<div style='flex:1'><div style='font-size:13px;font-weight:700;margin-bottom:6px'>" + dateLbl + "</div><div style='display:flex;flex-wrap:wrap;gap:14px;font-size:14px'>" + parts.join("") + "</div></div>";
+    c.appendChild(card);
+  }
+  if (!any) {
+    var empty = el("div", null, "No entries yet. Add today's numbers above.");
+    empty.style.cssText = "color:#555;font-size:13px;padding:8px 2px";
+    c.appendChild(empty);
+  }
+}
+
+function updateMinis() {
+  var w = whoop[todayKey] || {};
+  document.getElementById("whoopMini").textContent = (w.recovery !== undefined && w.recovery !== "") ? "&middot; " + w.recovery + "% recovery" : "";
+  var d = diet[todayKey] || {};
+  document.getElementById("dietMini").innerHTML = (d.weight !== undefined && d.weight !== "") ? "&middot; " + d.weight + " kg" : "";
+  document.getElementById("whoopMini").innerHTML = (w.recovery !== undefined && w.recovery !== "") ? "&middot; " + w.recovery + "% rec" : "";
+}
+
+function openWhoop() {
+  document.getElementById("scrHome").style.display = "none";
+  document.getElementById("scrWhoop").style.display = "block";
+  document.getElementById("whoopDate").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+  buildInputs("whoopInputs", WHOOP_FIELDS, whoop);
+  buildHistory("whoopHistory", WHOOP_FIELDS, whoop);
+}
+
+function openDiet() {
+  document.getElementById("scrHome").style.display = "none";
+  document.getElementById("scrDiet").style.display = "block";
+  document.getElementById("dietDate").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+  buildInputs("dietInputs", DIET_FIELDS, diet);
+  buildHistory("dietHistory", DIET_FIELDS, diet);
 }
 
 function renderHome() {
@@ -374,6 +630,11 @@ function renderHome() {
     (function(id) { card.onclick = function() { openDay(id); }; })(d.id);
     grid.appendChild(card);
   }
+
+  document.getElementById("warmupCard").onclick = openWarmup;
+  document.getElementById("whoopCard").onclick = openWhoop;
+  document.getElementById("dietCard").onclick = openDiet;
+  updateMinis();
 }
 
 function renderDay() {
@@ -524,7 +785,14 @@ function renderDay() {
   }
 }
 
-renderHome();
+loadAll();
+ setRest(restSec);
+ renderHome();
+
+window.goHome = goHome;
+window.setRest = setRest;
+window.skipTimer = skipTimer;
+window.resetWeek = resetWeek;
 
 })();
 </script>
