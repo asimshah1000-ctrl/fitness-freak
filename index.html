@@ -65,6 +65,16 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
 .setsrow{display:flex;gap:8px;flex-wrap:wrap}
 .setbtn{width:54px;height:54px;border-radius:12px;border:1px solid #333;background:#141414;color:#666;font-weight:700;font-size:16px;cursor:pointer}
 .setbtn.done{border:none;color:#fff}
+.modebtns{display:flex;gap:8px}
+.modebtn{flex:1;padding:11px 8px;border-radius:10px;border:1px solid #2E2E2E;background:#141414;color:#777;font-weight:700;font-size:13px;cursor:pointer}
+.modebtn.sel{border-color:transparent;color:#fff}
+.phasebtn{flex:1;padding:8px;border-radius:9px;border:none;background:#2A2A2A;color:#777;font-weight:700;font-size:12px;cursor:pointer}
+.phasebtn.sel{background:#3DBE8B;color:#0D0D0D}
+.tipcard{border-radius:12px;padding:12px 14px;margin-bottom:12px;background:#06140F;border:1px solid #3DBE8B40;font-size:12.5px;color:#BBB;line-height:1.6}
+.vidbtn{width:100%;padding:11px;border-radius:10px;border:1px solid #4A1A1A;background:#1F0B0B;color:#FF6B6B;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px}
+.vidwrap{position:relative;padding-top:56.25%;border-radius:10px;overflow:hidden;background:#000;margin-bottom:8px}
+.vidwrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
+.vidlink{display:block;text-align:center;font-size:12px;color:#777;margin-bottom:14px;text-decoration:none}
 .restcard{background:#1A1A1A;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;border-left:4px solid;border-top:1px solid #2E2E2E;border-right:1px solid #2E2E2E;border-bottom:1px solid #2E2E2E}
 </style>
 </head>
@@ -72,7 +82,21 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
 <div id="scrHome">
   <div style="padding:8px 0 0">
     <div style="font-size:28px;font-weight:700;margin-bottom:4px">Fitness Freak &#x1F4AA;</div>
-    <div style="color:#666;font-size:13px;margin-bottom:20px">Machine &amp; cable only &middot; ~20 sets per muscle</div>
+    <div style="color:#666;font-size:13px;margin-bottom:20px" id="homeSub">Machine &amp; cable only &middot; ~20 sets per muscle</div>
+    <div class="card" id="modeCard">
+      <div style="font-size:11px;font-weight:700;color:#555;letter-spacing:.1em;margin-bottom:10px">TRAINING PLAN</div>
+      <div class="modebtns">
+        <button class="modebtn" id="modeBeg" onclick="setMode('beginner')">&#127793; Beginner</button>
+        <button class="modebtn" id="modeAdv" onclick="setMode('advanced')">&#128293; Advanced PPL</button>
+      </div>
+      <div id="phaseBox" style="margin-top:12px">
+        <div class="modebtns">
+          <button class="phasebtn" id="phase1" onclick="setPhase(1)">Week 1&ndash;4 &middot; 2 sets</button>
+          <button class="phasebtn" id="phase2" onclick="setPhase(2)">Week 5&ndash;8 &middot; 3 sets</button>
+        </div>
+      </div>
+      <div id="modeNote" style="font-size:12px;color:#777;margin-top:10px;line-height:1.55"></div>
+    </div>
     <div class="card" id="diaryCard" style="cursor:pointer;border-color:#E0A020;background:linear-gradient(135deg,#1A1A1A,#1A1305)">
       <div style="display:flex;align-items:center;gap:16px">
         <div style="position:relative;width:72px;height:72px;flex-shrink:0">
@@ -167,7 +191,7 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
     </div>
     <div class="grid" id="dayGrid"></div>
     <button class="resetbtn" id="resetBtn" onclick="resetWeek()">Reset Week</button>
-    <div class="foot">Fitness Freak &middot; Push Pull Legs Upper Lower</div>
+    <div class="foot" id="homeFoot">Fitness Freak &middot; Push Pull Legs Upper Lower</div>
   </div>
 </div>
 
@@ -331,7 +355,9 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
 
 var IMGS = {
   "Machine Chest Press": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Chest_Press/0.jpg",
-  "Pec Deck Flye": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pec_Deck_Fly/0.jpg",
+  "Pec Deck Flye": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butterfly/0.jpg",
+  "Leg Press": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg",
+  "Cable Bicep Curl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Biceps_Cable_Curl/0.jpg",
   "Low-to-High Cable Flye": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Low_Cable_Crossover/0.jpg",
   "Seated Machine OHP": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Shoulder_Press/0.jpg",
   "Cable Lateral Raise": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Lateral_Raise/0.jpg",
@@ -359,9 +385,74 @@ var IMGS = {
   "Leg Press (Wide, High Feet)": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Narrow_Stance_Leg_Press/0.jpg",
   "Cable Pull-Through": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull_Through/0.jpg",
   "Standing Machine Calf Raise": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg",
-  "Cable EZ-Bar Curl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Curl/0.jpg",
+  "Cable EZ-Bar Curl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Biceps_Cable_Curl/0.jpg",
   "Cable Rope Pushdown": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg"
 };
+
+// YouTube form tutorials (video id). Variants share one video.
+var VIDEOS = {
+  "Machine Chest Press": "4YpxZXFADmc",
+  "Pec Deck Flye": "hZ0CGRaKwbQ",
+  "Low-to-High Cable Flye": "eQ_NBB6OBH4",
+  "High-to-Low Cable Flye": "8Um35Es-ROE",
+  "Incline Machine Press": "LiDArz1R2NU",
+  "Seated Machine OHP": "Anu8s_nkNpM",
+  "Cable Lateral Raise": "-CAGLnWUkWA",
+  "Cable Lateral Raise (1-arm)": "-CAGLnWUkWA",
+  "Cable Pushdown (V-bar)": "_w-HpW70nSQ",
+  "Cable Rope Pushdown": "K--j4Qh9d2s",
+  "Cable Overhead Extension": "mRozZKkGIfg",
+  "Machine Lat Pulldown (Wide)": "AOpi-p0cJkc",
+  "Machine Lat Pulldown": "AOpi-p0cJkc",
+  "Chest-Supported Row": "FU6YQawma2Q",
+  "Seated Cable Row (Neutral)": "OeLb503NZHk",
+  "Reverse Pec Deck": "e4dJ1QoxUtI",
+  "Cable Face Pull": "wnPX6Fwe-Fg",
+  "Machine Preacher Curl": "to3m8zws1n8",
+  "Cable Hammer Curl (Rope)": "PslvRTdHJHY",
+  "Cable EZ-Bar Curl": "pEVXvlVKm80",
+  "Cable Bicep Curl": "pEVXvlVKm80",
+  "Leg Press": "oB3lpMSis_4",
+  "Leg Press (Narrow, Low Feet)": "oB3lpMSis_4",
+  "Leg Press (Wide, High Feet)": "oB3lpMSis_4",
+  "Hack Squat Machine": "hglQExHCM9Q",
+  "Hack Squat (Wider Stance)": "hglQExHCM9Q",
+  "Leg Extension": "3zWKiW9BBpo",
+  "Lying Leg Curl": "S367qaHeYWU",
+  "Seated Leg Curl": "S367qaHeYWU",
+  "Machine Hip Thrust": "UlljOYPM57U",
+  "Cable Pull-Through": "fbF4_pn_0xc",
+  "Seated Calf Raise": "smyXy_dhXo8",
+  "Standing Machine Calf Raise": "yYBAQGtpIyM"
+};
+
+// Beginner plan: same 7 machine/cable moves, 3 days a week, light weight
+var BEGINNER_EX = [
+  {n:"Machine Chest Press",t:"Machine",m:"Chest, Triceps, Shoulders",note:"Seat itni rakho ke handles chest ke beech ki level pe hon. 2 sec push, 2 sec wapas. Kandhe peeche aur neeche rakho."},
+  {n:"Machine Lat Pulldown",t:"Machine",m:"Lats, Biceps",note:"Thigh pad tight karo. Bar upper chest tak lao, peeche jhool ke mat kheencho. Kohniyan neeche aur peeche."},
+  {n:"Leg Press",t:"Machine",m:"Quads, Glutes",note:"Paon platform ke beech, shoulder-width. Ghutne andar na girein, upar ghutne lock mat karo. Utna neeche jao jitna kamar seat se na uthe."},
+  {n:"Seated Cable Row (Neutral)",t:"Cable",m:"Mid-back, Lats",note:"Seedha baitho, seena bahar. Handle pet tak kheencho, 1 sec squeeze. Peeche jhool ke weight mat kheencho."},
+  {n:"Lying Leg Curl",t:"Machine",m:"Hamstrings",note:"Pad ankle ke thora upar. Hips pad se na uthein. Upar 1 sec ruko, dheere neeche lao."},
+  {n:"Cable Pushdown (V-bar)",t:"Cable",m:"Triceps",note:"Kohniyan side mein fix rakho, sirf neeche wala haath move ho. Neeche poora seedha karo."},
+  {n:"Cable Bicep Curl",t:"Cable",m:"Biceps",note:"Kohniyan body ke saath fix, jhool nahi. Upar squeeze, dheere neeche."}
+];
+var BEG_COLOR = "#3DBE8B", BEG_BG = "#06140F";
+function buildBeginnerDays() {
+  var sets = bPhase === 2 ? 3 : 2;
+  var days = [];
+  var labels = ["DAY 1", "DAY 3", "DAY 5"];
+  for (var k = 0; k < 3; k++) {
+    var exs = [];
+    for (var i = 0; i < BEGINNER_EX.length; i++) {
+      var b = BEGINNER_EX[i];
+      exs.push({n:b.n,t:b.t,s:sets,r:"12-15",m:b.m,note:b.note});
+    }
+    days.push({id:"b" + (k + 1),num:k + 1,lbl:labels[k],name:"FULL BODY",color:BEG_COLOR,bg:BEG_BG,focus:"7 machines · " + sets + " sets · 12-15 reps",isRest:false,ex:exs});
+  }
+  days.push({id:"brest",num:0,lbl:"DAY 2 · 4 · 6 · 7",name:"REST",color:"#7A7977",bg:"#141413",focus:"Beech mein 1 din chhoro · 30-40 min walk",isRest:true,ex:[]});
+  return days;
+}
+function activeDays() { return mode === "beginner" ? buildBeginnerDays() : DAYS; }
 
 var DAYS = [
   {id:"d1",num:1,name:"PUSH",color:"#D85A30",bg:"#1E0E07",focus:"Chest / Side Delts / Triceps",total:27,isRest:false,ex:[
@@ -438,6 +529,7 @@ var WARMUP = [
   {icon:"&#129461;",title:"Ankle circles",detail:"10 each direction per foot. Often skipped, but key for stable squats, leg press and calf work.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ankle_Circles/0.jpg"}
 ];
 var TOTAL = 145, done = {}, weights = {}, restSec = 90;
+var mode = "beginner", bPhase = 1, openVid = null;
 var whoop = {}, diet = {};
 var foodLog = {}, customFoods = [], water = {};
 var FOODS = [{"id":0,"cat":"Pakistani / Indian","n":"Roti / Chapati","p":"1 medium","cal":100,"pro":3},{"id":1,"cat":"Pakistani / Indian","n":"Paratha (plain)","p":"1 medium","cal":280,"pro":6},{"id":2,"cat":"Pakistani / Indian","n":"Naan","p":"1 piece","cal":260,"pro":9},{"id":3,"cat":"Pakistani / Indian","n":"Tandoori Roti","p":"1 piece","cal":120,"pro":4},{"id":4,"cat":"Pakistani / Indian","n":"Plain Rice (cooked)","p":"1 cup","cal":200,"pro":4},{"id":5,"cat":"Pakistani / Indian","n":"Biryani (chicken)","p":"1 plate","cal":480,"pro":22},{"id":6,"cat":"Pakistani / Indian","n":"Biryani (mutton)","p":"1 plate","cal":540,"pro":24},{"id":7,"cat":"Pakistani / Indian","n":"Pulao (chicken)","p":"1 plate","cal":420,"pro":18},{"id":8,"cat":"Pakistani / Indian","n":"Chicken Karahi","p":"1 cup","cal":380,"pro":32},{"id":9,"cat":"Pakistani / Indian","n":"Chicken Curry","p":"1 cup","cal":300,"pro":28},{"id":10,"cat":"Pakistani / Indian","n":"Mutton Karahi","p":"1 cup","cal":420,"pro":30},{"id":11,"cat":"Pakistani / Indian","n":"Beef Nihari","p":"1 cup","cal":450,"pro":28},{"id":12,"cat":"Pakistani / Indian","n":"Haleem","p":"1 bowl","cal":350,"pro":20},{"id":13,"cat":"Pakistani / Indian","n":"Daal (lentils)","p":"1 cup","cal":230,"pro":14},{"id":14,"cat":"Pakistani / Indian","n":"Daal Chawal","p":"1 plate","cal":400,"pro":16},{"id":15,"cat":"Pakistani / Indian","n":"Chana (chickpea curry)","p":"1 cup","cal":270,"pro":12},{"id":16,"cat":"Pakistani / Indian","n":"Rajma (kidney beans)","p":"1 cup","cal":280,"pro":13},{"id":17,"cat":"Pakistani / Indian","n":"Aloo Gosht","p":"1 cup","cal":340,"pro":22},{"id":18,"cat":"Pakistani / Indian","n":"Palak Paneer","p":"1 cup","cal":320,"pro":14},{"id":19,"cat":"Pakistani / Indian","n":"Paneer Tikka","p":"100 g","cal":270,"pro":18},{"id":20,"cat":"Pakistani / Indian","n":"Chicken Tikka","p":"4 pieces","cal":280,"pro":35},{"id":21,"cat":"Pakistani / Indian","n":"Seekh Kabab","p":"2 sticks","cal":300,"pro":24},{"id":22,"cat":"Pakistani / Indian","n":"Chapli Kabab","p":"1 piece","cal":320,"pro":18},{"id":23,"cat":"Pakistani / Indian","n":"Shami Kabab","p":"1 piece","cal":130,"pro":9},{"id":24,"cat":"Pakistani / Indian","n":"Chicken Qeema","p":"1 cup","cal":320,"pro":26},{"id":25,"cat":"Pakistani / Indian","n":"Beef Qeema","p":"1 cup","cal":350,"pro":26},{"id":26,"cat":"Pakistani / Indian","n":"Aloo Palak","p":"1 cup","cal":180,"pro":5},{"id":27,"cat":"Pakistani / Indian","n":"Bhindi (okra)","p":"1 cup","cal":160,"pro":4},{"id":28,"cat":"Pakistani / Indian","n":"Mixed Vegetable Sabzi","p":"1 cup","cal":150,"pro":4},{"id":29,"cat":"Pakistani / Indian","n":"Raita","p":"1 cup","cal":120,"pro":6},{"id":30,"cat":"Pakistani / Indian","n":"Samosa","p":"1 piece","cal":130,"pro":3},{"id":31,"cat":"Pakistani / Indian","n":"Pakora","p":"5 pieces","cal":220,"pro":5},{"id":32,"cat":"Pakistani / Indian","n":"Chicken Roll / Paratha Roll","p":"1 roll","cal":380,"pro":18},{"id":33,"cat":"Pakistani / Indian","n":"Halwa Puri","p":"1 plate","cal":650,"pro":12},{"id":34,"cat":"Pakistani / Indian","n":"Nihari with Naan","p":"1 plate","cal":700,"pro":35},{"id":35,"cat":"Pakistani / Indian","n":"Gulab Jamun","p":"2 pieces","cal":300,"pro":4},{"id":36,"cat":"Pakistani / Indian","n":"Kheer","p":"1 bowl","cal":280,"pro":7},{"id":37,"cat":"Pakistani / Indian","n":"Jalebi","p":"100 g","cal":350,"pro":3},{"id":38,"cat":"Pakistani / Indian","n":"Lassi (sweet)","p":"1 glass","cal":220,"pro":8},{"id":39,"cat":"Pakistani / Indian","n":"Lassi (salted)","p":"1 glass","cal":120,"pro":7},{"id":40,"cat":"Fast Food","n":"Beef Burger (plain)","p":"1 burger","cal":350,"pro":18},{"id":41,"cat":"Fast Food","n":"Cheeseburger","p":"1 burger","cal":430,"pro":22},{"id":42,"cat":"Fast Food","n":"Big Mac","p":"1 burger","cal":560,"pro":26},{"id":43,"cat":"Fast Food","n":"Whopper","p":"1 burger","cal":660,"pro":28},{"id":44,"cat":"Fast Food","n":"Zinger Burger","p":"1 burger","cal":480,"pro":24},{"id":45,"cat":"Fast Food","n":"Chicken Burger","p":"1 burger","cal":400,"pro":22},{"id":46,"cat":"Fast Food","n":"McChicken","p":"1 burger","cal":400,"pro":14},{"id":47,"cat":"Fast Food","n":"Fries (medium)","p":"1 serving","cal":340,"pro":4},{"id":48,"cat":"Fast Food","n":"Fries (large)","p":"1 serving","cal":490,"pro":6},{"id":49,"cat":"Fast Food","n":"Pizza Slice (cheese)","p":"1 slice","cal":285,"pro":12},{"id":50,"cat":"Fast Food","n":"Pizza Slice (pepperoni)","p":"1 slice","cal":310,"pro":13},{"id":51,"cat":"Fast Food","n":"Pizza (medium, whole)","p":"1 pizza","cal":1800,"pro":75},{"id":52,"cat":"Fast Food","n":"Fried Chicken (1 piece)","p":"1 piece","cal":320,"pro":22},{"id":53,"cat":"Fast Food","n":"Chicken Nuggets","p":"6 pieces","cal":270,"pro":14},{"id":54,"cat":"Fast Food","n":"Hot Dog","p":"1 piece","cal":290,"pro":10},{"id":55,"cat":"Fast Food","n":"Shawarma (chicken)","p":"1 wrap","cal":400,"pro":25},{"id":56,"cat":"Fast Food","n":"Shawarma (beef)","p":"1 wrap","cal":450,"pro":26},{"id":57,"cat":"Fast Food","n":"Falafel Wrap","p":"1 wrap","cal":350,"pro":12},{"id":58,"cat":"Fast Food","n":"Doner Kebab Plate","p":"1 plate","cal":600,"pro":35},{"id":59,"cat":"Fast Food","n":"Sub Sandwich (6 inch)","p":"1 sub","cal":350,"pro":18},{"id":60,"cat":"Fast Food","n":"Club Sandwich","p":"1 sandwich","cal":480,"pro":24},{"id":61,"cat":"Fast Food","n":"Grilled Cheese","p":"1 sandwich","cal":400,"pro":14},{"id":62,"cat":"Fast Food","n":"Tacos (beef)","p":"2 tacos","cal":340,"pro":16},{"id":63,"cat":"Fast Food","n":"Burrito (chicken)","p":"1 burrito","cal":540,"pro":28},{"id":64,"cat":"Fast Food","n":"Spring Rolls","p":"3 pieces","cal":220,"pro":5},{"id":65,"cat":"Fast Food","n":"Fried Rice (chicken)","p":"1 plate","cal":480,"pro":20},{"id":66,"cat":"Fast Food","n":"Chow Mein","p":"1 plate","cal":430,"pro":16},{"id":67,"cat":"Fast Food","n":"Manchurian","p":"1 cup","cal":320,"pro":10},{"id":68,"cat":"Fast Food","n":"Onion Rings","p":"1 serving","cal":280,"pro":4},{"id":69,"cat":"Fast Food","n":"Mozzarella Sticks","p":"4 pieces","cal":330,"pro":14},{"id":70,"cat":"Protein Sources","n":"Chicken Breast (grilled)","p":"150 g","cal":250,"pro":46},{"id":71,"cat":"Protein Sources","n":"Chicken Thigh","p":"1 piece","cal":210,"pro":26},{"id":72,"cat":"Protein Sources","n":"Whole Egg","p":"1 egg","cal":70,"pro":6},{"id":73,"cat":"Protein Sources","n":"Egg Whites","p":"3 whites","cal":50,"pro":11},{"id":74,"cat":"Protein Sources","n":"Boiled Eggs","p":"2 eggs","cal":140,"pro":12},{"id":75,"cat":"Protein Sources","n":"Omelette (3 egg)","p":"1 serving","cal":280,"pro":19},{"id":76,"cat":"Protein Sources","n":"Beef Steak","p":"150 g","cal":350,"pro":38},{"id":77,"cat":"Protein Sources","n":"Mince Beef (cooked)","p":"100 g","cal":250,"pro":26},{"id":78,"cat":"Protein Sources","n":"Fish (grilled)","p":"150 g","cal":220,"pro":34},{"id":79,"cat":"Protein Sources","n":"Salmon","p":"150 g","cal":310,"pro":34},{"id":80,"cat":"Protein Sources","n":"Tuna (canned)","p":"1 can","cal":130,"pro":28},{"id":81,"cat":"Protein Sources","n":"Prawns / Shrimp","p":"100 g","cal":100,"pro":24},{"id":82,"cat":"Protein Sources","n":"Greek Yogurt","p":"1 cup","cal":130,"pro":17},{"id":83,"cat":"Protein Sources","n":"Cottage Cheese","p":"1 cup","cal":180,"pro":25},{"id":84,"cat":"Protein Sources","n":"Whey Protein","p":"1 scoop","cal":120,"pro":24},{"id":85,"cat":"Protein Sources","n":"Protein Bar","p":"1 bar","cal":220,"pro":20},{"id":86,"cat":"Protein Sources","n":"Tofu","p":"100 g","cal":145,"pro":16},{"id":87,"cat":"Protein Sources","n":"Lentils (cooked)","p":"1 cup","cal":230,"pro":18},{"id":88,"cat":"Protein Sources","n":"Chickpeas (boiled)","p":"1 cup","cal":270,"pro":15},{"id":89,"cat":"Protein Sources","n":"Paneer","p":"100 g","cal":265,"pro":18},{"id":90,"cat":"Carbs & Grains","n":"White Bread","p":"1 slice","cal":80,"pro":3},{"id":91,"cat":"Carbs & Grains","n":"Brown Bread","p":"1 slice","cal":75,"pro":4},{"id":92,"cat":"Carbs & Grains","n":"Oats (dry)","p":"1/2 cup","cal":150,"pro":5},{"id":93,"cat":"Carbs & Grains","n":"Oatmeal (cooked)","p":"1 bowl","cal":220,"pro":8},{"id":94,"cat":"Carbs & Grains","n":"Pasta (cooked)","p":"1 cup","cal":220,"pro":8},{"id":95,"cat":"Carbs & Grains","n":"Spaghetti Bolognese","p":"1 plate","cal":450,"pro":22},{"id":96,"cat":"Carbs & Grains","n":"Quinoa (cooked)","p":"1 cup","cal":220,"pro":8},{"id":97,"cat":"Carbs & Grains","n":"Sweet Potato","p":"1 medium","cal":110,"pro":2},{"id":98,"cat":"Carbs & Grains","n":"Potato (boiled)","p":"1 medium","cal":130,"pro":3},{"id":99,"cat":"Carbs & Grains","n":"Mashed Potato","p":"1 cup","cal":240,"pro":4},{"id":100,"cat":"Carbs & Grains","n":"Cornflakes","p":"1 cup","cal":100,"pro":2},{"id":101,"cat":"Carbs & Grains","n":"Pancakes","p":"2 pieces","cal":350,"pro":8},{"id":102,"cat":"Carbs & Grains","n":"French Toast","p":"2 slices","cal":300,"pro":11},{"id":103,"cat":"Carbs & Grains","n":"Bagel","p":"1 piece","cal":250,"pro":10},{"id":104,"cat":"Carbs & Grains","n":"Croissant","p":"1 piece","cal":270,"pro":5},{"id":105,"cat":"Carbs & Grains","n":"Cereal with Milk","p":"1 bowl","cal":250,"pro":9},{"id":106,"cat":"Fruits & Veg","n":"Apple","p":"1 medium","cal":95,"pro":0},{"id":107,"cat":"Fruits & Veg","n":"Banana","p":"1 medium","cal":105,"pro":1},{"id":108,"cat":"Fruits & Veg","n":"Orange","p":"1 medium","cal":62,"pro":1},{"id":109,"cat":"Fruits & Veg","n":"Mango","p":"1 medium","cal":200,"pro":3},{"id":110,"cat":"Fruits & Veg","n":"Grapes","p":"1 cup","cal":100,"pro":1},{"id":111,"cat":"Fruits & Veg","n":"Watermelon","p":"1 cup","cal":46,"pro":1},{"id":112,"cat":"Fruits & Veg","n":"Strawberries","p":"1 cup","cal":50,"pro":1},{"id":113,"cat":"Fruits & Veg","n":"Dates","p":"3 pieces","cal":200,"pro":2},{"id":114,"cat":"Fruits & Veg","n":"Avocado","p":"half","cal":160,"pro":2},{"id":115,"cat":"Fruits & Veg","n":"Mixed Salad","p":"1 bowl","cal":80,"pro":3},{"id":116,"cat":"Fruits & Veg","n":"Cucumber","p":"1 cup","cal":16,"pro":1},{"id":117,"cat":"Fruits & Veg","n":"Carrots","p":"1 cup","cal":50,"pro":1},{"id":118,"cat":"Fruits & Veg","n":"Broccoli (cooked)","p":"1 cup","cal":55,"pro":4},{"id":119,"cat":"Fruits & Veg","n":"Spinach (cooked)","p":"1 cup","cal":40,"pro":5},{"id":120,"cat":"Fruits & Veg","n":"Corn","p":"1 cup","cal":130,"pro":5},{"id":121,"cat":"Snacks & Sweets","n":"Almonds","p":"30 g","cal":175,"pro":6},{"id":122,"cat":"Snacks & Sweets","n":"Peanuts","p":"30 g","cal":165,"pro":7},{"id":123,"cat":"Snacks & Sweets","n":"Mixed Nuts","p":"30 g","cal":180,"pro":5},{"id":124,"cat":"Snacks & Sweets","n":"Peanut Butter","p":"2 tbsp","cal":190,"pro":8},{"id":125,"cat":"Snacks & Sweets","n":"Potato Chips","p":"1 small bag","cal":150,"pro":2},{"id":126,"cat":"Snacks & Sweets","n":"Chocolate Bar","p":"1 bar","cal":230,"pro":3},{"id":127,"cat":"Snacks & Sweets","n":"Dark Chocolate","p":"30 g","cal":170,"pro":2},{"id":128,"cat":"Snacks & Sweets","n":"Biscuits","p":"3 pieces","cal":150,"pro":2},{"id":129,"cat":"Snacks & Sweets","n":"Ice Cream","p":"1 scoop","cal":140,"pro":2},{"id":130,"cat":"Snacks & Sweets","n":"Doughnut","p":"1 piece","cal":250,"pro":3},{"id":131,"cat":"Snacks & Sweets","n":"Cake Slice","p":"1 slice","cal":350,"pro":4},{"id":132,"cat":"Snacks & Sweets","n":"Popcorn","p":"1 bowl","cal":120,"pro":3},{"id":133,"cat":"Snacks & Sweets","n":"Granola Bar","p":"1 bar","cal":150,"pro":3},{"id":134,"cat":"Snacks & Sweets","n":"Cookies","p":"2 pieces","cal":160,"pro":2},{"id":135,"cat":"Snacks & Sweets","n":"Muffin","p":"1 piece","cal":380,"pro":6},{"id":136,"cat":"Drinks","n":"Milk (full fat)","p":"1 glass","cal":150,"pro":8},{"id":137,"cat":"Drinks","n":"Milk (skimmed)","p":"1 glass","cal":90,"pro":8},{"id":138,"cat":"Drinks","n":"Chai (with sugar)","p":"1 cup","cal":120,"pro":3},{"id":139,"cat":"Drinks","n":"Chai (no sugar)","p":"1 cup","cal":60,"pro":3},{"id":140,"cat":"Drinks","n":"Coffee (black)","p":"1 cup","cal":5,"pro":0},{"id":141,"cat":"Drinks","n":"Latte","p":"1 cup","cal":190,"pro":10},{"id":142,"cat":"Drinks","n":"Cappuccino","p":"1 cup","cal":120,"pro":7},{"id":143,"cat":"Drinks","n":"Orange Juice","p":"1 glass","cal":110,"pro":2},{"id":144,"cat":"Drinks","n":"Mango Juice","p":"1 glass","cal":150,"pro":1},{"id":145,"cat":"Drinks","n":"Cola / Soft Drink","p":"1 can","cal":140,"pro":0},{"id":146,"cat":"Drinks","n":"Diet Cola","p":"1 can","cal":0,"pro":0},{"id":147,"cat":"Drinks","n":"Energy Drink","p":"1 can","cal":110,"pro":0},{"id":148,"cat":"Drinks","n":"Protein Shake","p":"1 glass","cal":200,"pro":30},{"id":149,"cat":"Drinks","n":"Smoothie (fruit)","p":"1 glass","cal":250,"pro":5},{"id":150,"cat":"Drinks","n":"Coconut Water","p":"1 glass","cal":45,"pro":0},{"id":151,"cat":"Protein Sources","n":"Sunny Side / Fried Egg","p":"1 egg","cal":90,"pro":6},{"id":152,"cat":"Protein Sources","n":"Scrambled Egg","p":"1 egg","cal":95,"pro":6},{"id":153,"cat":"Carbs & Grains","n":"Multigrain Bread","p":"1 slice","cal":80,"pro":4},{"id":154,"cat":"Carbs & Grains","n":"Toast (with butter)","p":"1 slice","cal":120,"pro":3},{"id":155,"cat":"Drinks","n":"Half Cup Chai (sugar)","p":"half cup","cal":60,"pro":2},{"id":156,"cat":"Drinks","n":"Half Cup Chai (no sugar)","p":"half cup","cal":30,"pro":2}];
@@ -462,6 +554,8 @@ function saveAll() {
     localStorage.setItem("ff_custom", JSON.stringify(customFoods));
     localStorage.setItem("ff_water", JSON.stringify(water));
     localStorage.setItem("ff_waterunit", waterUnit);
+    localStorage.setItem("ff_mode", mode);
+    localStorage.setItem("ff_bphase", String(bPhase));
   } catch (e) {}
 }
 function loadAll() {
@@ -475,6 +569,8 @@ function loadAll() {
     customFoods = JSON.parse(localStorage.getItem("ff_custom") || "[]");
     water = JSON.parse(localStorage.getItem("ff_water") || "{}");
     var wu = localStorage.getItem("ff_waterunit"); if (wu) waterUnit = wu;
+    var md = localStorage.getItem("ff_mode"); if (md === "beginner" || md === "advanced") mode = md;
+    var bp = parseInt(localStorage.getItem("ff_bphase")); if (bp === 1 || bp === 2) bPhase = bp;
   } catch (e) {}
 }
 
@@ -510,14 +606,60 @@ function skipTimer() {
 }
 
 function getDay(id) {
-  for (var i = 0; i < DAYS.length; i++) if (DAYS[i].id === id) return DAYS[i];
+  var days = activeDays();
+  for (var i = 0; i < days.length; i++) if (days[i].id === id) return days[i];
   return null;
 }
 
+// Counts only sets of the plan currently shown, so switching modes keeps numbers honest
 function totalDone() {
-  var n = 0;
-  for (var k in done) if (done[k]) n++;
+  var days = activeDays(), n = 0;
+  for (var i = 0; i < days.length; i++) {
+    var p = getProgress(days[i]);
+    if (p) n += p.got;
+  }
   return n;
+}
+
+function totalSets() {
+  var days = activeDays(), n = 0;
+  for (var i = 0; i < days.length; i++)
+    for (var j = 0; j < days[i].ex.length; j++) n += days[i].ex[j].s;
+  return n;
+}
+
+function setMode(m) {
+  mode = m;
+  saveAll();
+  renderHome();
+}
+
+function setPhase(p) {
+  bPhase = p;
+  saveAll();
+  renderHome();
+}
+
+function renderModeCard() {
+  var beg = mode === "beginner";
+  var bb = document.getElementById("modeBeg"), ab = document.getElementById("modeAdv");
+  bb.className = "modebtn" + (beg ? " sel" : "");
+  ab.className = "modebtn" + (beg ? "" : " sel");
+  bb.style.background = beg ? BEG_COLOR : "";
+  bb.style.color = beg ? "#0D0D0D" : "";
+  ab.style.background = beg ? "" : "#D85A30";
+  document.getElementById("phaseBox").style.display = beg ? "block" : "none";
+  document.getElementById("phase1").className = "phasebtn" + (bPhase === 1 ? " sel" : "");
+  document.getElementById("phase2").className = "phasebtn" + (bPhase === 2 ? " sel" : "");
+  document.getElementById("modeNote").textContent = beg
+    ? "3 din full body (jaise Sat / Mon / Wed). Pehle 4 hafte 2 sets, phir 3 sets. 2-3 mahine baad Advanced PPL pe switch karo."
+    : "5 din PPL + Upper/Lower, ~20 sets per muscle. Yeh advanced volume hai — 2-3 mahine training ke baad hi.";
+  document.getElementById("homeSub").textContent = beg
+    ? "Beginner · 3 din full body · machine & cable"
+    : "Machine & cable only · ~20 sets per muscle";
+  document.getElementById("homeFoot").textContent = beg
+    ? "Fitness Freak · Beginner Full Body"
+    : "Fitness Freak · Push Pull Legs Upper Lower";
 }
 
 function getProgress(d) {
@@ -533,7 +675,7 @@ function getProgress(d) {
 }
 
 function goHome() {
-  skipTimer(); openEx = null;
+  skipTimer(); openEx = null; openVid = null;
   document.getElementById("scrHome").style.display = "block";
   document.getElementById("scrDay").style.display = "none";
   document.getElementById("scrWarmup").style.display = "none";
@@ -562,12 +704,15 @@ function openWarmup() {
       "<span style='font-size:22px;flex-shrink:0'>" + w.icon + "</span>" +
       "<div><div style='font-size:14px;font-weight:700;margin-bottom:4px;color:#D85A30'>" + (i+1) + ". " + w.title + "</div>" +
       "<div style='font-size:13px;color:#888;line-height:1.6'>" + w.detail + "</div></div></div>";
+    var wl = ytSearchLink(w.title + " warm up how to", "&#9654; YouTube pe dekho &#8599;");
+    wl.style.marginBottom = "12px";
+    rc.appendChild(wl);
     list.appendChild(rc);
   }
 }
 
 function openDay(id) {
-  curDay = id; openEx = null;
+  curDay = id; openEx = null; openVid = null;
   document.getElementById("scrHome").style.display = "none";
   document.getElementById("scrDay").style.display = "block";
   renderDay();
@@ -575,6 +720,7 @@ function openDay(id) {
 
 function toggleEx(ei) {
   openEx = (openEx === ei) ? null : ei;
+  openVid = null;
   renderDay();
 }
 
@@ -583,6 +729,7 @@ function toggleSet(dayId, ei, si) {
   done[k] = !done[k];
   saveAll();
   if (done[k]) startTimer();
+  openVid = null;  // close any playing video while lifting
   renderDay();
 }
 
@@ -596,6 +743,14 @@ function resetWeek() {
   done = {}; weights = {};
   saveAll();
   renderHome();
+}
+
+function ytSearchLink(query, label) {
+  var a = el("a", "vidlink", label);
+  a.href = "https://www.youtube.com/results?search_query=" + encodeURIComponent(query);
+  a.target = "_blank";
+  a.rel = "noopener";
+  return a;
 }
 
 function el(tag, cls, html) {
@@ -1112,6 +1267,9 @@ function renderWeightGraph() {
 }
 
 function renderHome() {
+  renderModeCard();
+  TOTAL = totalSets();
+  var days = activeDays();
   var td = totalDone();
   var pct = Math.round(td / TOTAL * 100);
   document.getElementById("homeSets").textContent = td + " / " + TOTAL + " sets";
@@ -1122,8 +1280,8 @@ function renderHome() {
   var grid = document.getElementById("dayGrid");
   while (grid.firstChild) grid.removeChild(grid.firstChild);
 
-  for (var i = 0; i < DAYS.length; i++) {
-    var d = DAYS[i];
+  for (var i = 0; i < days.length; i++) {
+    var d = days[i];
     var p = getProgress(d);
     var complete = p && p.got === p.tot && p.tot > 0;
 
@@ -1134,7 +1292,7 @@ function renderHome() {
     bar.style.background = d.color;
     card.appendChild(bar);
 
-    card.appendChild(el("div", "dnum", "DAY " + d.num));
+    card.appendChild(el("div", "dnum", d.lbl || ("DAY " + d.num)));
 
     var nm = el("div", "dname", d.name);
     nm.style.color = complete ? d.color : "#F2F2F2";
@@ -1180,7 +1338,7 @@ function renderDay() {
 
   var hdr = document.getElementById("dayHdr");
   hdr.style.background = d.bg;
-  document.getElementById("hdrNum").textContent = "DAY " + d.num;
+  document.getElementById("hdrNum").textContent = d.lbl || ("DAY " + d.num);
   document.getElementById("hdrNum").style.color = d.color;
   document.getElementById("hdrName").textContent = d.name;
   document.getElementById("hdrName").style.color = d.color;
@@ -1210,6 +1368,13 @@ function renderDay() {
   document.getElementById("exList").style.display = "block";
   var list = document.getElementById("exList");
   while (list.firstChild) list.removeChild(list.firstChild);
+
+  if (mode === "beginner") {
+    list.appendChild(el("div", "tipcard",
+      "<b style='color:#3DBE8B'>&#127793; Beginner rule:</b> Weight aisa lo ke aakhri 2-3 reps mushkil lagein lekin form na toote. " +
+      "15 reps aaram se ho jayein to agli dafa thora barhao. Muscle mein jalan normal hai — <b>joint mein dard</b> ho to wahi exercise rok do. " +
+      "Pehli dafa koi machine use kar rahe ho to <b>&#9654; Video</b> zaroor dekho."));
+  }
 
   for (var i = 0; i < d.ex.length; i++) {
     var ex = d.ex[i];
@@ -1269,6 +1434,26 @@ function renderDay() {
 
       var body = el("div", "exbody");
 
+      // Form video: embedded player (loads only on tap) + YouTube search fallback
+      var vidKey = d.id + "_" + i;
+      var vid = VIDEOS[ex.n];
+      if (vid) {
+        var vb = el("button", "vidbtn", openVid === vidKey ? "&#10005; Video band karo" : "&#9654; Form video dekho");
+        (function(k) { vb.onclick = function() { openVid = (openVid === k) ? null : k; renderDay(); }; })(vidKey);
+        body.appendChild(vb);
+        if (openVid === vidKey) {
+          var vw = el("div", "vidwrap");
+          var ifr = document.createElement("iframe");
+          ifr.src = "https://www.youtube-nocookie.com/embed/" + vid + "?rel=0&playsinline=1&modestbranding=1";
+          ifr.title = ex.n + " form video";
+          ifr.setAttribute("allow", "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen");
+          ifr.setAttribute("allowfullscreen", "");
+          vw.appendChild(ifr);
+          body.appendChild(vw);
+        }
+      }
+      body.appendChild(ytSearchLink(ex.n + " proper form", vid ? "Video nahi chal raha? YouTube pe aur dekho &#8599;" : "&#9654; YouTube pe form video dekho &#8599;"));
+
       // Form cue
       var fc = el("div", "formcue");
       fc.style.background = d.bg;
@@ -1327,6 +1512,8 @@ loadAll();
 
 window.goHome = goHome;
 window.setRest = setRest;
+window.setMode = setMode;
+window.setPhase = setPhase;
 window.skipTimer = skipTimer;
 window.resetWeek = resetWeek;
 window.closeFoodPicker = closeFoodPicker;
