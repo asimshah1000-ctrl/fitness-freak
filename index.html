@@ -75,11 +75,15 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
 .vidwrap{position:relative;padding-top:56.25%;border-radius:10px;overflow:hidden;background:#000;margin-bottom:8px}
 .vidwrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
 .vidlink{display:block;text-align:center;font-size:12px;color:#777;margin-bottom:14px;text-decoration:none}
+.savedtick{font-size:11px;font-weight:700;width:58px;flex-shrink:0;transition:opacity .4s;opacity:0}
 .restcard{background:#1A1A1A;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;border-left:4px solid;border-top:1px solid #2E2E2E;border-right:1px solid #2E2E2E;border-bottom:1px solid #2E2E2E}
 </style>
 </head>
 <body>
 <div id="scrHome">
+  <div id="storageWarn" style="display:none;background:#2A0E0E;border:1px solid #D85A30;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.55;color:#F2C4B4">
+    <b style="color:#FF6B6B">&#9888; Data save nahi ho raha!</b> App shayad file preview ya private tab mein khuli hai. Browser (Safari/Chrome) mein yeh link kholo:<br><b>asimshah1000-ctrl.github.io/fitness-freak</b>
+  </div>
   <div style="padding:8px 0 0">
     <div style="font-size:28px;font-weight:700;margin-bottom:4px">Fitness Freak &#x1F4AA;</div>
     <div style="color:#666;font-size:13px;margin-bottom:20px" id="homeSub">Machine &amp; cable only &middot; ~20 sets per muscle</div>
@@ -570,7 +574,12 @@ var CAL_GOAL = 2000, PRO_GOAL = 190, WATER_GOAL = 8;
 var waterUnit = "bottle";  // "bottle" (500ml = 2 glasses) or "glass"
 var timerInt = null, timerRem = 0, timerTot = 0;
 var curDay = null, openEx = null;
-var todayKey = new Date().toISOString().slice(0,10);
+// Date key in the phone's own timezone (UTC keys put entries before 4am on the previous day)
+function localDateKey(d) {
+  return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+}
+var todayKey = localDateKey(new Date());
+function refreshToday() { todayKey = localDateKey(new Date()); }
 
 function saveAll() {
   try {
@@ -585,7 +594,22 @@ function saveAll() {
     localStorage.setItem("ff_waterunit", waterUnit);
     localStorage.setItem("ff_mode", mode);
     localStorage.setItem("ff_bphase", String(bPhase));
-  } catch (e) {}
+    storageOk = true;
+  } catch (e) { storageOk = false; }
+  showStorageWarning();
+}
+var storageOk = true;
+function checkStorage() {
+  try {
+    localStorage.setItem("ff_test", "1");
+    storageOk = localStorage.getItem("ff_test") === "1";
+    localStorage.removeItem("ff_test");
+  } catch (e) { storageOk = false; }
+  showStorageWarning();
+}
+function showStorageWarning() {
+  var b = document.getElementById("storageWarn");
+  if (b) b.style.display = storageOk ? "none" : "block";
 }
 function loadAll() {
   try {
@@ -839,15 +863,20 @@ function buildInputs(containerId, fields, store) {
     row.appendChild(lbl);
     var inp = document.createElement("input");
     inp.className = "wtinput";
-    inp.type = "number";
+    inp.type = "text";
     inp.inputMode = "decimal";
+    inp.autocomplete = "off";
     inp.placeholder = f.ph;
     inp.value = (rec[f.k] !== undefined) ? rec[f.k] : "";
     inp.style.borderColor = (rec[f.k] !== undefined) ? f.color + "88" : "#2E2E2E";
     (function(field, color){
       inp.oninput = function(){
-        setField(store, todayKey, field, this.value);
-        this.style.borderColor = this.value === "" ? "#2E2E2E" : color + "88";
+        var v = this.value.replace(",", ".").replace(/[^0-9.]/g, "");
+        if (v !== this.value) this.value = v;
+        if (v !== "" && isNaN(parseFloat(v))) return;
+        setField(store, todayKey, field, v);
+        this.style.borderColor = v === "" ? "#2E2E2E" : color + "88";
+        flashSaved(this);
         if (containerId === "whoopInputs") buildHistory("whoopHistory", WHOOP_FIELDS, whoop);
         else { buildHistory("dietHistory", DIET_FIELDS, diet); renderWeightGraph(); }
         updateMinis();
@@ -858,13 +887,23 @@ function buildInputs(containerId, fields, store) {
   }
 }
 
+function flashSaved(inp) {
+  var tick = inp.parentNode.querySelector(".savedtick");
+  if (!tick) { tick = el("span", "savedtick"); inp.parentNode.appendChild(tick); }
+  tick.textContent = storageOk ? "\u2713 saved" : "\u2717 not saved";
+  tick.style.color = storageOk ? "#3DBE8B" : "#D85A30";
+  tick.style.opacity = "1";
+  clearTimeout(tick._t);
+  tick._t = setTimeout(function(){ tick.style.opacity = "0"; }, 1500);
+}
+
 function buildHistory(containerId, fields, store) {
   var c = document.getElementById(containerId);
   while (c.firstChild) c.removeChild(c.firstChild);
   var days = [];
   for (var i = 0; i < 7; i++) {
     var d = new Date(); d.setDate(d.getDate() - i);
-    days.push(d.toISOString().slice(0,10));
+    days.push(localDateKey(d));
   }
   var any = false;
   for (var x = 0; x < days.length; x++) {
@@ -918,6 +957,7 @@ function updateMinis() {
 }
 
 function openWhoop() {
+  refreshToday();
   document.getElementById("scrHome").style.display = "none";
   document.getElementById("scrWhoop").style.display = "block";
   document.getElementById("whoopDate").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
@@ -926,6 +966,7 @@ function openWhoop() {
 }
 
 function openDiet() {
+  refreshToday();
   document.getElementById("scrHome").style.display = "none";
   document.getElementById("scrDiet").style.display = "block";
   document.getElementById("dietDate").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
@@ -955,6 +996,7 @@ function dayTotals(key) {
 }
 
 function openDiary() {
+  refreshToday();
   document.getElementById("scrHome").style.display = "none";
   document.getElementById("scrDiary").style.display = "block";
   document.getElementById("diaryDate").textContent = "Today";
@@ -1313,6 +1355,7 @@ function renderWeightGraph() {
 }
 
 function renderHome() {
+  refreshToday();
   renderModeCard();
   TOTAL = totalSets();
   var days = activeDays();
@@ -1562,6 +1605,7 @@ function renderDay() {
   list.appendChild(cb);
 }
 
+checkStorage();
 loadAll();
  setRest(restSec);
  renderHome();
