@@ -141,8 +141,18 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
       <div style="display:flex;align-items:center;gap:12px">
         <span style="font-size:26px">&#128293;</span>
         <div style="flex:1">
-          <div style="font-size:15px;font-weight:700;margin-bottom:2px">Warmup &middot; 8-10 min</div>
-          <div style="font-size:12px;color:#888">Do this before every session &middot; tap to view</div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:2px">Warmup &middot; ~10 min</div>
+          <div style="font-size:12px;color:#888">Treadmill/cycle + joints &middot; har workout se pehle</div>
+        </div>
+        <span style="font-size:18px;color:#444">&#9656;</span>
+      </div>
+    </div>
+    <div class="card" id="coolCard" style="cursor:pointer;border-color:#2E88D9">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:26px">&#129482;</span>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;margin-bottom:2px">Cooldown &middot; ~10 min</div>
+          <div style="font-size:12px;color:#888">Walk + stretching &middot; workout ke baad</div>
         </div>
         <span style="font-size:18px;color:#444">&#9656;</span>
       </div>
@@ -224,12 +234,22 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
 
 <div id="scrWarmup" style="display:none">
   <div class="dhdr" style="background:#1E0E07">
-    <button class="backbtn" onclick="goHome()">&larr; Back</button>
+    <button class="backbtn" onclick="routineBack()">&larr; Back</button>
     <div class="hdrlbl" style="color:#D85A30">PRE-WORKOUT</div>
     <div class="hdrname" style="color:#D85A30">WARMUP</div>
-    <div class="hdrfocus">General full-body &middot; 8-10 min before you lift</div>
+    <div class="hdrfocus">~10 min &middot; isi order mein karo, phir weights</div>
   </div>
   <div class="exlist" id="warmupList"></div>
+</div>
+
+<div id="scrCool" style="display:none">
+  <div class="dhdr" style="background:#07111E">
+    <button class="backbtn" onclick="routineBack()">&larr; Back</button>
+    <div class="hdrlbl" style="color:#2E88D9">POST-WORKOUT</div>
+    <div class="hdrname" style="color:#2E88D9">COOLDOWN</div>
+    <div class="hdrfocus">~10 min &middot; har stretch 20-30 sec, jhatke mat do</div>
+  </div>
+  <div class="exlist" id="coolList"></div>
 </div>
 
 <div id="scrWhoop" style="display:none">
@@ -514,19 +534,28 @@ var REST_TIPS = [
   {icon:"📊",title:"Log your weights",body:"Progressive overload is the #1 driver of hypertrophy - track every session"}
 ];
 
+// Warmup: beginner-friendly, all standing, uses treadmill/bike + joint circles (~10 min)
 var WARMUP = [
-  {icon:"&#127939;",title:"Light cardio",detail:"5 min easy incline walk, cycle or elliptical. Raises core temp and heart rate, primes blood flow to muscles.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elliptical_Trainer/0.jpg"},
-  {icon:"&#128064;",title:"Band pull-aparts",detail:"2 x 15. Opens up shoulders and warms the rotator cuff before any pressing or pulling.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Band_Pull_Apart/0.jpg"},
-  {icon:"&#129495;",title:"Bodyweight squats",detail:"2 x 15. Greases the knees and hips, wakes up the glutes and quads for leg or lower days.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Squat/0.jpg"},
-  {icon:"&#128081;",title:"Cat-cow stretch",detail:"1 min. Mobilises the spine, especially good if you sit a lot during the day.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cat_Stretch/0.jpg"},
-  {icon:"&#128137;",title:"Standing hip circles",detail:"10 each direction. Loosens the hips before squats, leg press and hip thrusts.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Hip_Circles/0.jpg"},
-  {icon:"&#127947;",title:"Warmup sets on first exercise",detail:"2 light sets (50% then 70% of working weight) before your first real set. Most important step - never skip it.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg"},
-  {icon:"&#129336;",title:"Mountain climbers",detail:"30 seconds. Raises the heart rate fast and fires up the core, shoulders and hips together.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Mountain_Climbers/0.jpg"},
-  {icon:"&#129494;",title:"Plank hold",detail:"30-45 seconds. Switches on the core and stabilises the spine before any heavy lifting.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg"},
-  {icon:"&#127939;",title:"Inchworm walkout",detail:"5 reps. Full-body dynamic stretch - hamstrings, shoulders and core all wake up at once.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Inchworm/0.jpg"},
-  {icon:"&#128131;",title:"Spinal rotation stretch",detail:"8 each side. Loosens the lower back and obliques, great before squats and rows.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Spinal_Stretch/0.jpg"},
-  {icon:"&#129485;",title:"Child's pose",detail:"30 seconds. Gentle stretch for the lats, lower back and hips - good to reset between movements.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Childs_Pose/0.jpg"},
-  {icon:"&#129461;",title:"Ankle circles",detail:"10 each direction per foot. Often skipped, but key for stable squats, leg press and calf work.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ankle_Circles/0.jpg"}
+  {icon:"&#128694;",title:"Treadmill walk ya cycle",detail:"5-7 min. Treadmill: 4.5-5.5 km/h, incline 2-3%. Ghutne ya kamar mein takleef ho to recumbent cycle (peeche tek wali) lo. Itna tez ke saans thori tez ho, lekin baat kar sako.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Walking_Treadmill/0.jpg",q:"treadmill walking warm up beginners"},
+  {icon:"&#128170;",title:"Arm circles",detail:"10 aage, 10 peeche. Chhote circles se shuru karo, phir bade. Kandhe garam hote hain.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Arm_Circles/0.jpg",q:"arm circles warm up"},
+  {icon:"&#128587;",title:"Shoulder rolls",detail:"10 aage, 10 peeche. Kandhe kaano tak upar, phir peeche aur neeche. Gardan aur traps relax hote hain.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Shoulder_Circles/0.jpg",q:"shoulder rolls warm up"},
+  {icon:"&#129303;",title:"Dynamic chest stretch",detail:"10 dafa. Baazu side mein kholo jaise kisi ko gale lagana ho, phir aage band karo. Chest press se pehle zaroori.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dynamic_Chest_Stretch/0.jpg",q:"dynamic chest stretch arm swings"},
+  {icon:"&#128260;",title:"Standing hip circles",detail:"10 har direction. Kisi machine ko pakad ke khade ho jao. Leg press se pehle hips khulte hain.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Hip_Circles/0.jpg",q:"standing hip circles warm up"},
+  {icon:"&#129461;",title:"Knee circles",detail:"10 har direction. Paon saath, haath ghutnon pe, halke circles. Dard ho to chhote circles karo.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Knee_Circles/0.jpg",q:"knee circles warm up"},
+  {icon:"&#129462;",title:"Ankle circles",detail:"10 har direction, har paon. Machine pakad ke ek paon hawa mein ghumao.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ankle_Circles/0.jpg",q:"ankle circles warm up"},
+  {icon:"&#129681;",title:"Bench sit-to-stand",detail:"10 reps. Bench pe baitho, haath aage, aur khade ho jao. Squat ka sab se asaan version — legs aur glutes jaag jate hain.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sit_Squats/0.jpg",q:"sit to stand exercise bench"},
+  {icon:"&#127947;",title:"Pehli machine pe warmup sets",detail:"Workout ki pehli exercise pe 2 halke sets: pehla bohot halka (12 reps), doosra thora bhari (8 reps). Phir asli sets. Sab se zaroori step — kabhi skip mat karo.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Chest_Press/0.jpg",q:"warm up sets before lifting beginners"}
+];
+
+// Cooldown: slow walk + static stretches, 20-30 sec each, no bouncing (~10 min)
+var COOLDOWN = [
+  {icon:"&#128694;",title:"Aaram se walk",detail:"5-10 min treadmill, flat (incline 0), 4-5 km/h. Dil ki dhadkan dheere normal hoti hai aur legs relax hoti hain.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Walking_Treadmill/0.jpg",q:"cool down walk after workout"},
+  {icon:"&#129303;",title:"Chest stretch",detail:"30 sec har side. Haath kisi machine ke frame pe rakho, kohni kandhe ki level pe, aur body ko dheere doosri taraf ghumao.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chest_And_Front_Of_Shoulder_Stretch/0.jpg",q:"standing chest stretch doorway"},
+  {icon:"&#129693;",title:"Lat stretch",detail:"30 sec. Dono haathon se machine ka handle pakdo, kamar seedhi rakh ke peeche hips le jao. Kamar ke side mein khinchav mehsoos hoga.",img:"",q:"standing lat stretch machine"},
+  {icon:"&#128170;",title:"Triceps stretch",detail:"20-30 sec har baazu. Haath sar ke peeche, doosre haath se kohni ko halka sa neeche dabao.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Stretch/0.jpg",q:"overhead triceps stretch"},
+  {icon:"&#129461;",title:"Quad stretch",detail:"30 sec har taang. Machine ya deewar pakdo, paon peeche se pakad ke hips ki taraf lao. Ghutne saath rakho.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Quad_Stretch/0.jpg",q:"standing quad stretch"},
+  {icon:"&#129681;",title:"Hamstring stretch",detail:"30 sec har taang. Bench pe baitho, ek taang seedhi aage, kamar seedhi rakh ke aage jhuko. Paon ki ungliyan chhoona zaroori nahi.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Hamstring/0.jpg",q:"seated hamstring stretch bench"},
+  {icon:"&#129462;",title:"Calf stretch",detail:"30 sec har taang. Deewar pe haath, ek paon peeche seedha, eedi zameen pe. Aage wala ghutna mod lo.",img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Stretch_Hands_Against_Wall/0.jpg",q:"calf stretch wall"}
 ];
 var TOTAL = 145, done = {}, weights = {}, restSec = 90;
 var mode = "beginner", bPhase = 1, openVid = null;
@@ -679,6 +708,7 @@ function goHome() {
   document.getElementById("scrHome").style.display = "block";
   document.getElementById("scrDay").style.display = "none";
   document.getElementById("scrWarmup").style.display = "none";
+  document.getElementById("scrCool").style.display = "none";
   document.getElementById("scrWhoop").style.display = "none";
   document.getElementById("scrDiet").style.display = "none";
   document.getElementById("scrDiary").style.display = "none";
@@ -687,29 +717,45 @@ function goHome() {
   renderHome();
 }
 
-function openWarmup() {
+var routineFromDay = false;
+function openRoutine(scrId, listId, items, color) {
+  routineFromDay = document.getElementById("scrDay").style.display === "block";
   document.getElementById("scrHome").style.display = "none";
   document.getElementById("scrDay").style.display = "none";
-  document.getElementById("scrWarmup").style.display = "block";
-  var list = document.getElementById("warmupList");
+  document.getElementById(scrId).style.display = "block";
+  window.scrollTo(0, 0);
+  var list = document.getElementById(listId);
   while (list.firstChild) list.removeChild(list.firstChild);
-  for (var i = 0; i < WARMUP.length; i++) {
-    var w = WARMUP[i];
+  list.appendChild(el("div", "tipcard",
+    "<b style='color:#3DBE8B'>Soreness ke baare mein:</b> Warmup chot se bachata hai aur cooldown body ko relax karta hai. " +
+    "Soreness kam karne ka asal tareeqa hai halka weight aur kam sets (Beginner Mode). Pehle 1-2 hafte thori soreness normal hai aur khud theek ho jati hai."));
+  for (var i = 0; i < items.length; i++) {
+    var w = items[i];
     var rc = el("div", "excard");
-    rc.style.borderColor = "#D85A3055";
+    rc.style.borderColor = color + "55";
     var imgHtml = "";
     if (w.img) imgHtml = "<img class='eximg' src='" + w.img + "' alt='" + w.title + "' loading='lazy' onerror=\"this.style.display='none'\">";
     rc.innerHTML = imgHtml +
       "<div style='padding:14px;display:flex;gap:12px;align-items:flex-start'>" +
       "<span style='font-size:22px;flex-shrink:0'>" + w.icon + "</span>" +
-      "<div><div style='font-size:14px;font-weight:700;margin-bottom:4px;color:#D85A30'>" + (i+1) + ". " + w.title + "</div>" +
+      "<div><div style='font-size:14px;font-weight:700;margin-bottom:4px;color:" + color + "'>" + (i+1) + ". " + w.title + "</div>" +
       "<div style='font-size:13px;color:#888;line-height:1.6'>" + w.detail + "</div></div></div>";
-    var wl = ytSearchLink(w.title + " warm up how to", "&#9654; YouTube pe dekho &#8599;");
+    var wl = ytSearchLink(w.q || w.title, "&#9654; YouTube pe dekho &#8599;");
     wl.style.marginBottom = "12px";
     rc.appendChild(wl);
     list.appendChild(rc);
   }
 }
+function routineBack() {
+  if (routineFromDay && curDay) {
+    document.getElementById("scrWarmup").style.display = "none";
+    document.getElementById("scrCool").style.display = "none";
+    document.getElementById("scrDay").style.display = "block";
+    renderDay();
+  } else goHome();
+}
+function openWarmup() { openRoutine("scrWarmup", "warmupList", WARMUP, "#D85A30"); }
+function openCooldown() { openRoutine("scrCool", "coolList", COOLDOWN, "#2E88D9"); }
 
 function openDay(id) {
   curDay = id; openEx = null; openVid = null;
@@ -1325,6 +1371,7 @@ function renderHome() {
   }
 
   document.getElementById("warmupCard").onclick = openWarmup;
+  document.getElementById("coolCard").onclick = openCooldown;
   document.getElementById("whoopCard").onclick = openWhoop;
   document.getElementById("dietCard").onclick = openDiet;
   document.getElementById("diaryCard").onclick = openDiary;
@@ -1375,6 +1422,10 @@ function renderDay() {
       "15 reps aaram se ho jayein to agli dafa thora barhao. Muscle mein jalan normal hai — <b>joint mein dard</b> ho to wahi exercise rok do. " +
       "Pehli dafa koi machine use kar rahe ho to <b>&#9654; Video</b> zaroor dekho."));
   }
+  var wb = el("button", "vidbtn", "&#128293; Pehle warmup (~10 min)");
+  wb.style.cssText = "border-color:#D85A3055;background:#1E0E07;color:#F08A5D";
+  wb.onclick = openWarmup;
+  list.appendChild(wb);
 
   for (var i = 0; i < d.ex.length; i++) {
     var ex = d.ex[i];
@@ -1504,6 +1555,11 @@ function renderDay() {
 
     list.appendChild(card);
   }
+
+  var cb = el("button", "vidbtn", "&#129482; Workout khatam? Ab cooldown karo");
+  cb.style.cssText = "margin-top:6px;border-color:#2E88D955;background:#07111E;color:#5AABF0";
+  cb.onclick = openCooldown;
+  list.appendChild(cb);
 }
 
 loadAll();
@@ -1513,6 +1569,7 @@ loadAll();
 window.goHome = goHome;
 window.setRest = setRest;
 window.setMode = setMode;
+window.routineBack = routineBack;
 window.setPhase = setPhase;
 window.skipTimer = skipTimer;
 window.resetWeek = resetWeek;
