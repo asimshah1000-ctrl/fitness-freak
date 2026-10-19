@@ -76,6 +76,8 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
 .vidwrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
 .vidlink{display:block;text-align:center;font-size:12px;color:#777;margin-bottom:14px;text-decoration:none}
 .savedtick{font-size:11px;font-weight:700;width:58px;flex-shrink:0;transition:opacity .4s;opacity:0}
+.syncbtn{padding:10px 14px;border-radius:10px;border:none;background:#2E88D9;color:#fff;font-weight:700;font-size:13px;cursor:pointer}
+.synclink{background:none;border:none;color:#666;font-size:12px;cursor:pointer;text-decoration:underline;padding:6px 0}
 .restcard{background:#1A1A1A;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;border-left:4px solid;border-top:1px solid #2E2E2E;border-right:1px solid #2E2E2E;border-bottom:1px solid #2E2E2E}
 </style>
 </head>
@@ -87,6 +89,7 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
   <div style="padding:8px 0 0">
     <div style="font-size:28px;font-weight:700;margin-bottom:4px">Fitness Freak &#x1F4AA;</div>
     <div style="color:#666;font-size:13px;margin-bottom:20px" id="homeSub">Machine &amp; cable only &middot; ~20 sets per muscle</div>
+    <div class="card" id="syncCard" style="border-color:#7A7977"></div>
     <div class="card" id="modeCard">
       <div style="font-size:11px;font-weight:700;color:#555;letter-spacing:.1em;margin-bottom:10px">TRAINING PLAN</div>
       <div class="modebtns">
@@ -597,6 +600,7 @@ function saveAll() {
     storageOk = true;
   } catch (e) { storageOk = false; }
   showStorageWarning();
+  if (typeof trackChanges === "function") trackChanges();
 }
 var storageOk = true;
 function checkStorage() {
@@ -1605,15 +1609,296 @@ function renderDay() {
   list.appendChild(cb);
 }
 
+
+// ===================== CLOUD SYNC (Firebase) =====================
+// Phone storage stays the working copy; Firestore keeps a backup per Google account.
+// Data lives at users/{uid}/data/{docId}: "settings" + one doc per store per month (e.g. "diet_2026-10").
+var FB_CONFIG = {
+  apiKey: "AIzaSyDySc5Q7__ghohnYE0LkYa321Ou6whkeQM",
+  authDomain: "fitness-freak-77ad5.firebaseapp.com",
+  projectId: "fitness-freak-77ad5",
+  storageBucket: "fitness-freak-77ad5.firebasestorage.app",
+  messagingSenderId: "932200642433",
+  appId: "1:932200642433:web:098c39219ec0d2c9a29a80"
+};
+var FB_VER = "10.14.1";
+var fbUser = null, fbDb = null, fbReady = false, fbFailed = false;
+var syncState = "idle", syncMsg = "", lastSyncAt = 0, pushTimer = null, syncing = false;
+var syncMeta = {mtime:{}, pushed:{}, snap:{}, uid:null};
+var DATE_STORES = ["whoop", "diet", "foodLog", "water"];
+
+function loadSyncMeta() {
+  try {
+    var m = JSON.parse(localStorage.getItem("ff_sync") || "null");
+    if (m) syncMeta = {mtime:m.mtime || {}, pushed:m.pushed || {}, snap:m.snap || {}, uid:m.uid || null};
+  } catch (e) {}
+}
+function saveSyncMeta() { try { localStorage.setItem("ff_sync", JSON.stringify(syncMeta)); } catch (e) {} }
+
+function hashStr(s) {
+  var h = 5381;
+  for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return h.toString(36) + "_" + s.length;
+}
+
+function storeByName(n) { return n === "whoop" ? whoop : n === "diet" ? diet : n === "foodLog" ? foodLog : water; }
+
+function buildDocs() {
+  var docs = {settings:{done:done, weights:weights, customFoods:customFoods, waterUnit:waterUnit, restSec:restSec, mode:mode, bPhase:bPhase}};
+  for (var i = 0; i < DATE_STORES.length; i++) {
+    var name = DATE_STORES[i], st = storeByName(name);
+    for (var k in st) {
+      if (!st.hasOwnProperty(k)) continue;
+      var id = name + "_" + k.slice(0, 7);
+      if (!docs[id]) docs[id] = {};
+      docs[id][k] = st[k];
+    }
+  }
+  return docs;
+}
+
+// Replace contents in place so screens holding a reference (e.g. open weight inputs) stay valid
+function fillObj(target, src) { for (var k in target) delete target[k]; for (var j in src) target[j] = src[j]; }
+
+function applyDocs(docs) {
+  var s = docs.settings || {};
+  fillObj(done, s.done || {});
+  fillObj(weights, s.weights || {});
+  customFoods.length = 0;
+  (s.customFoods || []).forEach(function(f) { customFoods.push(f); });
+  if (s.waterUnit) waterUnit = s.waterUnit;
+  if (s.restSec) restSec = s.restSec;
+  if (s.mode) mode = s.mode;
+  if (s.bPhase) bPhase = s.bPhase;
+  var stores = {whoop:{}, diet:{}, foodLog:{}, water:{}};
+  for (var id in docs) {
+    if (id === "settings") continue;
+    var name = id.split("_")[0];
+    if (!stores[name]) continue;
+    for (var k in docs[id]) stores[name][k] = docs[id][k];
+  }
+  fillObj(whoop, stores.whoop); fillObj(diet, stores.diet);
+  fillObj(foodLog, stores.foodLog); fillObj(water, stores.water);
+}
+
+// first = first sync of this account on this device: cloud wins on conflicts, nothing local is dropped.
+// Later syncs: whichever side changed last wins; dates present on only one side are always kept.
+function mergeDocs(local, remote, first) {
+  var out = {}, ids = {}, id;
+  for (id in local) ids[id] = 1;
+  for (id in remote) ids[id] = 1;
+  for (id in ids) {
+    var L = local[id], R = remote[id] ? remote[id].v : undefined;
+    if (R === undefined) { out[id] = L; continue; }
+    if (L === undefined) { out[id] = R; continue; }
+    var localNewer = !first && (syncMeta.mtime[id] || 0) > (remote[id].t || 0);
+    if (id === "settings") { out[id] = localNewer ? L : R; continue; }
+    var older = localNewer ? R : L, newer = localNewer ? L : R, m = {}, k;
+    for (k in older) m[k] = older[k];
+    for (k in newer) m[k] = newer[k];
+    out[id] = m;
+  }
+  return out;
+}
+
+// Called from saveAll: remember which docs changed (and when) and queue an upload
+function trackChanges() {
+  var docs = buildDocs(), now = Date.now(), changed = false;
+  for (var id in docs) {
+    var h = hashStr(JSON.stringify(docs[id]));
+    if (syncMeta.snap[id] !== h) { syncMeta.snap[id] = h; syncMeta.mtime[id] = now; changed = true; }
+  }
+  if (changed) saveSyncMeta();
+  if (changed && fbUser && !syncing) schedulePush();
+}
+
+function dataCol() { return fbDb.collection("users").doc(fbUser.uid).collection("data"); }
+
+function pushNow() {
+  clearTimeout(pushTimer);
+  if (!fbUser || !fbDb) return Promise.resolve();
+  var docs = buildDocs(), batch = fbDb.batch(), col = dataCol(), n = 0, hashes = {}, now = Date.now();
+  for (var id in docs) {
+    var str = JSON.stringify(docs[id]), h = hashStr(str);
+    if (syncMeta.pushed[id] === h) continue;
+    batch.set(col.doc(id), {v:str, t:syncMeta.mtime[id] || now});
+    hashes[id] = h; n++;
+  }
+  if (!n) return Promise.resolve();
+  setSync("syncing");
+  return batch.commit().then(function() {
+    for (var id in hashes) syncMeta.pushed[id] = hashes[id];
+    saveSyncMeta();
+    lastSyncAt = Date.now();
+    setSync("ok");
+  });
+}
+
+function schedulePush() {
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(function() {
+    pushNow().catch(function(e) { setSync("error", e); });
+  }, 2000);
+}
+
+function syncNow() {
+  if (!fbUser || !fbDb || syncing) return;
+  syncing = true;
+  setSync("syncing");
+  var uid = fbUser.uid;
+  dataCol().get().then(function(snap) {
+    var remote = {};
+    snap.forEach(function(d) {
+      var x = d.data();
+      try { remote[d.id] = {v:JSON.parse(x.v), t:x.t || 0}; } catch (e) {}
+    });
+    var first = syncMeta.uid !== uid;
+    applyDocs(mergeDocs(buildDocs(), remote, first));
+    if (first) syncMeta.pushed = {};
+    syncMeta.uid = uid;
+    for (var id in remote) syncMeta.pushed[id] = hashStr(JSON.stringify(remote[id].v));
+    saveAll();
+    refreshVisibleScreen();
+    return pushNow();
+  }).then(function() {
+    syncing = false; lastSyncAt = Date.now(); setSync("ok");
+  }).catch(function(e) {
+    syncing = false; setSync("error", e);
+  });
+}
+
+function isShown(id) { var e = document.getElementById(id); return e && e.style.display === "block"; }
+function refreshVisibleScreen() {
+  if (isShown("scrDay")) renderDay();
+  else if (isShown("scrDiary")) renderDiary();
+  else if (document.getElementById("scrHome").style.display !== "none") renderHome();
+}
+
+function setSync(state, err) {
+  syncState = state;
+  syncMsg = "";
+  if (err) {
+    var code = (err && err.code) || String((err && err.message) || err);
+    if (code.indexOf("permission-denied") >= 0) syncMsg = "Firestore rules set nahi hain (ya galat hain).";
+    else if (code.indexOf("unauthorized-domain") >= 0) syncMsg = "Firebase > Authentication > Settings > Authorized domains mein asimshah1000-ctrl.github.io add karo.";
+    else if (code.indexOf("unavailable") >= 0 || code.indexOf("network") >= 0) syncMsg = "Internet nahi hai. Net aate hi dobara try karo.";
+    else if (code.indexOf("not-found") >= 0) syncMsg = "Firestore database abhi bana nahi hai.";
+    else if (code.indexOf("operation-not-allowed") >= 0) syncMsg = "Firebase Authentication mein Google sign-in on nahi hai.";
+    else syncMsg = code;
+  }
+  renderSyncCard();
+}
+
+function escHtml(t) { return String(t || "").replace(/[&<>"']/g, function(c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+function renderSyncCard() {
+  var c = document.getElementById("syncCard");
+  if (!c) return;
+  var title, sub, btn = "", col = "#2E88D9";
+  if (fbFailed) {
+    title = "&#9729; Cloud backup load nahi hua";
+    sub = "Internet check karo, phir app dobara kholo. Data phone pe safe hai.";
+    col = "#7A7977";
+  } else if (!fbReady) {
+    title = "&#9729; Cloud backup";
+    sub = "Load ho raha hai...";
+    col = "#7A7977";
+  } else if (!fbUser) {
+    title = "&#9729; Cloud backup OFF";
+    sub = "Abhi data sirf is phone pe hai. Login karo taake kabhi gum na ho.";
+    btn = "<button class='syncbtn' onclick='fbSignIn()'>Google se login karo</button>";
+    col = "#E0A020";
+    if (syncState === "error") sub += "<br><span style='color:#FF6B6B'>&#9888; " + escHtml(syncMsg) + "</span>";
+  } else {
+    title = "&#9729; Cloud backup ON";
+    var who = escHtml(fbUser.email || fbUser.displayName || "");
+    if (syncState === "syncing") { sub = who + " &middot; &#8987; sync ho raha hai..."; col = "#3DBE8B"; }
+    else if (syncState === "error") {
+      sub = "<span style='color:#FF6B6B'>&#9888; Sync error: " + escHtml(syncMsg) + "</span>";
+      col = "#D85A30";
+      btn = "<button class='syncbtn' onclick='fbSync()'>Dobara try karo</button>";
+    } else {
+      sub = who + " &middot; <span style='color:#3DBE8B'>&#10003; Synced" + (lastSyncAt ? " " + new Date(lastSyncAt).toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"}) : "") + "</span>";
+      col = "#3DBE8B";
+    }
+    btn += "<button class='synclink' onclick='fbSignOut()'>Logout</button>";
+  }
+  c.style.borderColor = col;
+  c.innerHTML = "<div style='font-size:14px;font-weight:700;margin-bottom:4px'>" + title + "</div>" +
+    "<div style='font-size:12px;color:#888;line-height:1.5'>" + sub + "</div>" +
+    (btn ? "<div style='display:flex;gap:14px;align-items:center;margin-top:10px'>" + btn + "</div>" : "");
+}
+
+function loadScript(src) {
+  return new Promise(function(res, rej) {
+    var s = document.createElement("script");
+    s.src = src; s.onload = res;
+    s.onerror = function() { rej(new Error("load failed: " + src)); };
+    document.head.appendChild(s);
+  });
+}
+
+function initFirebase() {
+  var base = "https://www.gstatic.com/firebasejs/" + FB_VER + "/";
+  loadScript(base + "firebase-app-compat.js").then(function() {
+    return Promise.all([loadScript(base + "firebase-auth-compat.js"), loadScript(base + "firebase-firestore-compat.js")]);
+  }).then(function() {
+    firebase.initializeApp(FB_CONFIG);
+    fbDb = firebase.firestore();
+    fbReady = true;
+    firebase.auth().getRedirectResult().catch(function(e) { setSync("error", e); });
+    firebase.auth().onAuthStateChanged(function(u) {
+      fbUser = u;
+      renderSyncCard();
+      if (u) syncNow();
+    });
+    renderSyncCard();
+  }).catch(function() {
+    fbFailed = true;
+    renderSyncCard();
+  });
+}
+
+function fbSignIn() {
+  if (!fbReady) return;
+  var prov = new firebase.auth.GoogleAuthProvider();
+  prov.setCustomParameters({prompt:"select_account"});
+  firebase.auth().signInWithPopup(prov).catch(function(e) {
+    if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment")
+      return firebase.auth().signInWithRedirect(prov);
+    if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") setSync("error", e);
+  });
+}
+
+function fbSignOut() {
+  if (!confirm("Logout karna hai? Data phone pe rahega, sirf cloud backup band ho jayega.")) return;
+  pushNow().catch(function() {}).then(function() { syncState = "idle"; return firebase.auth().signOut(); });
+}
+
+function fbSync() { syncNow(); }
+
+document.addEventListener("visibilitychange", function() {
+  if (!fbUser) return;
+  if (document.visibilityState === "hidden") pushNow().catch(function() {});
+  else if (Date.now() - lastSyncAt > 30000) syncNow();
+});
+// =================== END CLOUD SYNC ===================
+
+loadSyncMeta();
 checkStorage();
 loadAll();
  setRest(restSec);
  renderHome();
+ renderSyncCard();
+ initFirebase();
 
 window.goHome = goHome;
 window.setRest = setRest;
 window.setMode = setMode;
 window.routineBack = routineBack;
+window.fbSignIn = fbSignIn;
+window.fbSignOut = fbSignOut;
+window.fbSync = fbSync;
 window.setPhase = setPhase;
 window.skipTimer = skipTimer;
 window.resetWeek = resetWeek;
