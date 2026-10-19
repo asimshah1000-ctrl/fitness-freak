@@ -356,8 +356,27 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
   </div>
   <div id="foodCatTabs" style="display:flex;gap:7px;overflow-x:auto;padding:12px 16px;border-bottom:1px solid #1E1E1E;-webkit-overflow-scrolling:touch"></div>
   <div style="padding:8px 16px 30px">
+    <button onclick="openPhotoPicker()" style="width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#E0A020,#D85A30);border:none;color:#0D0D0D;font-weight:800;font-size:14px;cursor:pointer;margin-bottom:10px">&#128247; Khane ki photo se add karo (AI)</button>
+    <input type="file" id="photoInput" accept="image/*" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" onchange="onPhotoChosen(this)">
     <button onclick="openCustomFood()" style="width:100%;padding:12px;border-radius:10px;background:#1A1305;border:1px dashed #E0A02066;color:#E0A020;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:12px">+ Add custom food (not in list)</button>
     <div id="foodList"></div>
+  </div>
+</div>
+
+<div id="scrPhoto" style="display:none">
+  <div class="dhdr" style="background:#1A1305">
+    <button class="backbtn" onclick="closePhoto()">&larr; Back</button>
+    <div class="hdrlbl" style="color:#E0A020">PHOTO SE ADD &middot; <span id="photoMealLbl">BREAKFAST</span></div>
+    <div class="hdrname" style="color:#E0A020;font-size:24px">&#128247; AI Calorie Check</div>
+  </div>
+  <div style="padding:16px 16px 40px">
+    <img id="photoPreview" alt="Food photo" style="display:none;width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin-bottom:12px;background:#111">
+    <input id="photoHint" class="wtinput" placeholder="Optional: e.g. ghar ka bana, 2 roti, kam oil" style="width:100%;margin-bottom:10px">
+    <button id="photoGo" onclick="analyzePhoto()" style="display:none;width:100%;padding:13px;border-radius:11px;background:#E0A020;border:none;color:#0D0D0D;font-weight:800;font-size:15px;cursor:pointer;margin-bottom:10px">&#128269; Calories nikaalo</button>
+    <div id="photoStatus" style="font-size:12.5px;line-height:1.55;margin-bottom:12px"></div>
+    <div id="photoResults"></div>
+    <button id="photoAdd" onclick="addPhotoItems()" style="display:none;width:100%;padding:13px;border-radius:11px;background:#3DBE8B;border:none;color:#0D0D0D;font-weight:800;font-size:14px;cursor:pointer;margin-top:4px">Add to diary</button>
+    <button onclick="openPhotoPicker()" style="width:100%;padding:11px;border-radius:11px;background:transparent;border:1px solid #2E2E2E;color:#888;font-weight:600;font-size:13px;cursor:pointer;margin-top:10px">&#128247; Doosri photo lo</button>
   </div>
 </div>
 
@@ -850,6 +869,7 @@ function goHome() {
   document.getElementById("scrWarmup").style.display = "none";
   document.getElementById("scrCool").style.display = "none";
   document.getElementById("scrTargets").style.display = "none";
+  document.getElementById("scrPhoto").style.display = "none";
   document.getElementById("scrWhoop").style.display = "none";
   document.getElementById("scrDiet").style.display = "none";
   document.getElementById("scrDiary").style.display = "none";
@@ -1999,6 +2019,234 @@ document.addEventListener("visibilitychange", function() {
 });
 // =================== END CLOUD SYNC ===================
 
+
+// ===================== PHOTO → CALORIES (Firebase AI Logic / Gemini) =====================
+// Photo is shrunk on the phone, sent to Gemini through Firebase AI Logic (no API key in the app),
+// and the estimate comes back as JSON the user can edit before it goes into the diary.
+var AI_SDK = "https://www.gstatic.com/firebasejs/13.0.0/";
+var AI_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash"];   // second one is a fallback
+// reCAPTCHA v3 site key for Firebase App Check (needed once AI Logic enforces App Check).
+var RECAPTCHA_SITE_KEY = "";
+var aiPromise = null, photoData = null, photoItems = [], photoBusy = false;
+
+function loadAI() {
+  if (aiPromise) return aiPromise;
+  aiPromise = Promise.all([
+    import(AI_SDK + "firebase-app.js"),
+    import(AI_SDK + "firebase-ai.js"),
+    RECAPTCHA_SITE_KEY ? import(AI_SDK + "firebase-app-check.js") : Promise.resolve(null)
+  ]).then(function(m) {
+    var appM = m[0], aiM = m[1], acM = m[2];
+    var app = appM.initializeApp(FB_CONFIG, "ai");
+    if (acM) acM.initializeAppCheck(app, {provider: new acM.ReCaptchaV3Provider(RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true});
+    return {m: aiM, ai: aiM.getAI(app, {backend: new aiM.GoogleAIBackend()})};
+  });
+  aiPromise.catch(function() { aiPromise = null; });
+  return aiPromise;
+}
+
+function nutritionSchema(S) {
+  return S.object({
+    properties: {
+      items: S.array({items: S.object({properties: {
+        name: S.string(),
+        portion: S.string(),
+        grams: S.number(),
+        calories: S.number(),
+        protein: S.number()
+      }})}),
+      confidence: S.enumString({enum: ["low", "medium", "high"]}),
+      notes: S.string()
+    }
+  });
+}
+
+function photoPrompt(hint) {
+  return "You estimate nutrition from food photos for a man in the UAE who mostly eats Pakistani/Indian home food, " +
+    "Arab food and fast food. Identify every distinct food or drink item in the photo. For each item estimate the portion " +
+    "actually shown and its calories (kcal) and protein (g). Desi home cooking usually uses a lot of oil/ghee, include it. " +
+    "Use short common English names (e.g. 'Chicken Biryani', 'Roti', 'Daal', 'Raita'). portion = short text like " +
+    "'1 plate', '2 pieces', '1 cup'. grams = estimated weight. Round calories to whole numbers. " +
+    "confidence = how sure you are about the portion sizes. notes = one short sentence in Roman Urdu about what you assumed " +
+    "(e.g. oil quantity, hidden items). If there is no food in the photo, return an empty items list and say so in notes." +
+    (hint ? " The user adds this note, trust it over the photo: \"" + hint + "\"." : "");
+}
+
+// Shrink to max 1024px JPEG so upload is fast and small
+function shrinkImage(file) {
+  return new Promise(function(res, rej) {
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function() {
+      var max = 1024, w = img.naturalWidth, h = img.naturalHeight, sc = Math.min(1, max / Math.max(w, h));
+      var cv = document.createElement("canvas");
+      cv.width = Math.round(w * sc); cv.height = Math.round(h * sc);
+      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(url);
+      res(cv.toDataURL("image/jpeg", 0.82));
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); rej(new Error("Photo khul nahi saki")); };
+    img.src = url;
+  });
+}
+
+function aiErrorText(e) {
+  var t = String((e && (e.code || "")) + " " + (e && e.message || e));
+  if (/app.?check|appcheck|attestation/i.test(t)) return "Firebase App Check setup chahiye (Security > App Check). Mujhe batao, main step bata dunga.";
+  if (/api.?not.?enabled|SERVICE_DISABLED|has not been used|AI Logic|firebasevertexai|generativelanguage/i.test(t)) return "Firebase console mein AI Services > AI Logic > Get started karo (Gemini Developer API).";
+  if (/429|quota|RESOURCE_EXHAUSTED|rate/i.test(t)) return "AI ki free limit abhi khatam ho gayi. Thori der baad try karo.";
+  if (/load|fetch|network|Failed to fetch|import/i.test(t)) return "Internet check karo, AI load nahi hua.";
+  if (/JSON|Unexpected token/i.test(t)) return "AI ka jawab samajh nahi aaya. Dobara try karo.";
+  return "AI error: " + t.slice(0, 140);
+}
+
+function openPhotoPicker() {
+  var inp = document.getElementById("photoInput");
+  inp.value = "";
+  inp.click();
+}
+
+function onPhotoChosen(inp) {
+  var f = inp.files && inp.files[0];
+  if (!f) return;
+  document.getElementById("scrFood").style.display = "none";
+  document.getElementById("scrPhoto").style.display = "block";
+  window.scrollTo(0, 0);
+  document.getElementById("photoMealLbl").textContent = curMeal.toUpperCase();
+  document.getElementById("photoHint").value = "";
+  photoItems = []; photoData = null;
+  renderPhotoResults();
+  setPhotoStatus("Photo tayyar ho rahi hai...", "#888");
+  shrinkImage(f).then(function(d) {
+    photoData = d;
+    document.getElementById("photoPreview").src = d;
+    document.getElementById("photoPreview").style.display = "block";
+    document.getElementById("photoGo").style.display = "block";
+    setPhotoStatus("Kuch batana ho to upar likh do (optional), phir 'Calories nikaalo' dabao.", "#888");
+  }).catch(function(e) { setPhotoStatus(e.message, "#D85A30"); });
+}
+
+function setPhotoStatus(t, col) {
+  var s = document.getElementById("photoStatus");
+  s.innerHTML = t; s.style.color = col || "#888";
+}
+
+function runModel(ctx, idx, parts) {
+  var model = ctx.m.getGenerativeModel(ctx.ai, {
+    model: AI_MODELS[idx],
+    generationConfig: {responseMimeType: "application/json", responseSchema: nutritionSchema(ctx.m.Schema)}
+  });
+  return model.generateContent(parts).catch(function(e) {
+    var t = String(e && e.message || e);
+    if (idx + 1 < AI_MODELS.length && /not.?found|404|not supported|unknown model/i.test(t)) return runModel(ctx, idx + 1, parts);
+    throw e;
+  });
+}
+
+function analyzePhoto() {
+  if (!photoData || photoBusy) return;
+  photoBusy = true;
+  var go = document.getElementById("photoGo");
+  go.disabled = true; go.textContent = "⏳ AI dekh raha hai...";
+  setPhotoStatus("AI photo dekh raha hai, 5-15 second lagenge...", "#E0A020");
+  var hint = document.getElementById("photoHint").value.trim();
+  loadAI().then(function(ctx) {
+    var part = {inlineData: {data: photoData.split(",")[1], mimeType: "image/jpeg"}};
+    return runModel(ctx, 0, [photoPrompt(hint), part]);
+  }).then(function(r) {
+    var j = JSON.parse(r.response.text());
+    photoItems = (j.items || []).map(function(it) {
+      return {on: true, n: String(it.name || "Food").slice(0, 60), p: String(it.portion || "1 serving").slice(0, 40),
+              cal: Math.max(0, Math.round(+it.calories || 0)), pro: Math.max(0, Math.round(+it.protein || 0))};
+    });
+    var conf = {low: "kam", medium: "theek-thaak", high: "zyada"}[j.confidence] || "";
+    if (!photoItems.length) setPhotoStatus("&#129300; " + escHtml(j.notes || "Photo mein khana nazar nahi aaya."), "#E0A020");
+    else setPhotoStatus("&#9888; Yeh AI ka <b>andaza</b> hai" + (conf ? " (yaqeen: " + conf + ")" : "") + ". Numbers theek kar sakte ho. " + escHtml(j.notes || ""), "#AAA");
+    renderPhotoResults();
+  }).catch(function(e) {
+    setPhotoStatus("&#9888; " + escHtml(aiErrorText(e)), "#FF6B6B");
+  }).then(function() {
+    photoBusy = false; go.disabled = false; go.textContent = "🔍 Dobara nikaalo";
+  });
+}
+
+function renderPhotoResults() {
+  var c = document.getElementById("photoResults");
+  while (c.firstChild) c.removeChild(c.firstChild);
+  var addBtn = document.getElementById("photoAdd");
+  if (!photoItems.length) { addBtn.style.display = "none"; return; }
+  for (var i = 0; i < photoItems.length; i++) {
+    (function(i) {
+      var it = photoItems[i];
+      var card = el("div", "card");
+      card.style.cssText = "padding:12px;margin-bottom:10px;border-color:" + (it.on ? "#E0A02066" : "#2E2E2E") + ";opacity:" + (it.on ? "1" : ".5");
+      var top = el("div");
+      top.style.cssText = "display:flex;gap:10px;align-items:center;margin-bottom:8px";
+      var cb = document.createElement("input");
+      cb.type = "checkbox"; cb.checked = it.on;
+      cb.style.cssText = "width:20px;height:20px;accent-color:#E0A020;flex-shrink:0";
+      cb.onchange = function() { it.on = this.checked; renderPhotoResults(); };
+      top.appendChild(cb);
+      var nm = document.createElement("input");
+      nm.className = "wtinput"; nm.value = it.n;
+      nm.style.cssText = "flex:1;font-weight:700";
+      nm.oninput = function() { it.n = this.value; };
+      top.appendChild(nm);
+      card.appendChild(top);
+      var row = el("div");
+      row.style.cssText = "display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px";
+      [["p", "Portion", "text"], ["cal", "kcal", "decimal"], ["pro", "Protein g", "decimal"]].forEach(function(fd) {
+        var w = el("div");
+        var l = el("div", null, fd[1]);
+        l.style.cssText = "font-size:10px;color:#777;font-weight:700;margin-bottom:3px";
+        w.appendChild(l);
+        var x = document.createElement("input");
+        x.className = "wtinput"; x.type = "text"; x.inputMode = fd[2]; x.value = it[fd[0]];
+        x.style.cssText = "width:100%;padding:8px 9px;font-size:13px";
+        x.oninput = function() {
+          if (fd[0] === "p") it.p = this.value;
+          else { var v = parseFloat(this.value.replace(",", ".")); it[fd[0]] = isNaN(v) ? 0 : Math.round(v); updatePhotoTotal(); }
+        };
+        w.appendChild(x);
+        row.appendChild(w);
+      });
+      card.appendChild(row);
+      c.appendChild(card);
+    })(i);
+  }
+  addBtn.style.display = "block";
+  updatePhotoTotal();
+}
+
+function updatePhotoTotal() {
+  var cal = 0, pro = 0, n = 0;
+  photoItems.forEach(function(it) { if (it.on) { cal += it.cal; pro += it.pro; n++; } });
+  var b = document.getElementById("photoAdd");
+  b.textContent = n ? "Add to " + curMeal + " · " + cal + " kcal · " + pro + "g protein" : "Koi item select nahi";
+  b.disabled = !n;
+  b.style.opacity = n ? "1" : ".5";
+}
+
+function addPhotoItems() {
+  var d = getDayFood(todayKey), n = 0;
+  photoItems.forEach(function(it) {
+    if (!it.on || !String(it.n).trim()) return;
+    d[curMeal].push({n: String(it.n).trim(), p: (String(it.p).trim() || "1 serving") + " · 📷", cal: it.cal, pro: it.pro, q: 1});
+    n++;
+  });
+  if (!n) return;
+  saveAll();
+  photoItems = []; photoData = null;
+  document.getElementById("scrPhoto").style.display = "none";
+  document.getElementById("scrDiary").style.display = "block";
+  renderDiary(); updateMinis();
+}
+
+function closePhoto() {
+  document.getElementById("scrPhoto").style.display = "none";
+  document.getElementById("scrFood").style.display = "block";
+}
+// =================== END PHOTO → CALORIES ===================
+
 loadSyncMeta();
 checkStorage();
 loadAll();
@@ -2016,6 +2264,11 @@ window.fbSignIn = fbSignIn;
 window.fbSignOut = fbSignOut;
 window.fbSync = fbSync;
 window.saveTargets = saveTargets;
+window.openPhotoPicker = openPhotoPicker;
+window.onPhotoChosen = onPhotoChosen;
+window.analyzePhoto = analyzePhoto;
+window.addPhotoItems = addPhotoItems;
+window.closePhoto = closePhoto;
 window.resetTargets = resetTargets;
 window.setPhase = setPhase;
 window.skipTimer = skipTimer;
