@@ -120,7 +120,7 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
           <div style="font-size:15px;font-weight:700;margin-bottom:6px">Food Diary</div>
           <div style="display:flex;gap:14px;font-size:12px">
             <div><span id="calEaten" style="color:#E0A020;font-weight:700">0</span> <span style="color:#777">eaten</span></div>
-            <div><span id="proEaten" style="color:#3DBE8B;font-weight:700">0g</span> <span style="color:#777">/ 190g protein</span></div>
+            <div><span id="proEaten" style="color:#3DBE8B;font-weight:700">0g</span> <span style="color:#777">/ <span id="homeProGoal">190</span>g protein</span></div>
           </div>
           <div class="pbar" style="margin-top:8px;margin-bottom:0"><div class="pfill" id="proBar" style="width:0%;background:#3DBE8B"></div></div>
         </div>
@@ -164,23 +164,26 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
         <span style="font-size:18px;color:#444">&#9656;</span>
       </div>
     </div>
-    <div class="card" style="border-color:#15897A">
-      <div style="font-size:11px;font-weight:700;color:#15897A;letter-spacing:.1em;margin-bottom:12px">&#127942; FAT LOSS TARGETS</div>
+    <div class="card" id="targetsCard" style="border-color:#15897A;cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:#15897A;letter-spacing:.1em">&#127942; FAT LOSS TARGETS</div>
+        <div style="font-size:12px;font-weight:700;color:#15897A">&#9998; Edit</div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div style="background:#0D0D0D;border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:22px;font-weight:700;color:#15897A">2000</div>
+          <div id="tgCal" style="font-size:22px;font-weight:700;color:#15897A">2000</div>
           <div style="font-size:11px;color:#777;margin-top:2px">Calories / day</div>
         </div>
         <div style="background:#0D0D0D;border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:22px;font-weight:700;color:#15897A">190g</div>
+          <div id="tgPro" style="font-size:22px;font-weight:700;color:#15897A">190g</div>
           <div style="font-size:11px;color:#777;margin-top:2px">Protein / day</div>
         </div>
         <div style="background:#0D0D0D;border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:22px;font-weight:700;color:#15897A">9,000</div>
+          <div id="tgSteps" style="font-size:22px;font-weight:700;color:#15897A">9,000</div>
           <div style="font-size:11px;color:#777;margin-top:2px">Steps / day</div>
         </div>
         <div style="background:#0D0D0D;border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:22px;font-weight:700;color:#15897A">1 kg</div>
+          <div id="tgLoss" style="font-size:22px;font-weight:700;color:#15897A">1 kg</div>
           <div style="font-size:11px;color:#777;margin-top:2px">Loss / week</div>
         </div>
       </div>
@@ -257,6 +260,21 @@ body{background:#0D0D0D;color:#F2F2F2;font-family:-apple-system,sans-serif;paddi
     <div class="hdrfocus">~10 min &middot; har stretch 20-30 sec, jhatke mat do</div>
   </div>
   <div class="exlist" id="coolList"></div>
+</div>
+
+<div id="scrTargets" style="display:none">
+  <div class="dhdr" style="background:#051512">
+    <button class="backbtn" onclick="goHome()">&larr; Back</button>
+    <div class="hdrlbl" style="color:#15897A">SETTINGS</div>
+    <div class="hdrname" style="color:#15897A">MY TARGETS</div>
+    <div class="hdrfocus">Apne doctor / dietitian ke mashwaray ke mutabiq rakho</div>
+  </div>
+  <div style="padding:16px">
+    <div id="targetInputs"></div>
+    <button onclick="saveTargets()" style="width:100%;padding:13px;border-radius:11px;background:#15897A;border:none;color:#fff;font-weight:700;font-size:15px;cursor:pointer;margin-top:6px">Save targets</button>
+    <button onclick="resetTargets()" style="width:100%;padding:11px;border-radius:11px;background:transparent;border:1px solid #2E2E2E;color:#777;font-weight:600;font-size:13px;cursor:pointer;margin-top:10px">Default pe wapas (2000 kcal / 190g / 9000 / 1 kg / 2 L)</button>
+    <div id="targetMsg" style="font-size:12px;margin-top:12px;text-align:center"></div>
+  </div>
 </div>
 
 <div id="scrWhoop" style="display:none">
@@ -574,6 +592,16 @@ var curMeal = "Breakfast", curFoodCat = "Recent", foodSearch = "";
 var pendingFood = null, pendingQty = 1;
 var QTY_STEPS = [0.25,0.5,0.75,1,1.5,2,2.5,3,4];
 var CAL_GOAL = 2000, PRO_GOAL = 190, WATER_GOAL = 8;
+// Editable fat-loss targets (saved on phone + synced with cloud backup)
+var DEFAULT_TARGETS = {cal:2000, pro:190, steps:9000, loss:1, water:2};
+var targets = {cal:2000, pro:190, steps:9000, loss:1, water:2};
+var TARGET_FIELDS = [
+  {k:"cal",   label:"Calories / day", unit:"kcal", min:1000, max:5000,  step:"1",   hint:"Roz kitni calories khani hain"},
+  {k:"pro",   label:"Protein / day",  unit:"g",    min:30,   max:400,   step:"1",   hint:"Roz ka protein"},
+  {k:"steps", label:"Steps / day",    unit:"",     min:1000, max:50000, step:"1",   hint:"WHOOP / phone ke steps"},
+  {k:"loss",  label:"Loss / week",    unit:"kg",   min:0.1,  max:2,     step:"0.1", hint:"0.5-1 kg sustainable hai"},
+  {k:"water", label:"Water / day",    unit:"L",    min:0.5,  max:6,     step:"0.25",hint:"Dubai ki garmi mein 2.5-3 L behtar"}
+];
 var waterUnit = "bottle";  // "bottle" (500ml = 2 glasses) or "glass"
 var timerInt = null, timerRem = 0, timerTot = 0;
 var curDay = null, openEx = null;
@@ -597,6 +625,7 @@ function saveAll() {
     localStorage.setItem("ff_waterunit", waterUnit);
     localStorage.setItem("ff_mode", mode);
     localStorage.setItem("ff_bphase", String(bPhase));
+    localStorage.setItem("ff_targets", JSON.stringify(targets));
     storageOk = true;
   } catch (e) { storageOk = false; }
   showStorageWarning();
@@ -628,6 +657,7 @@ function loadAll() {
     var wu = localStorage.getItem("ff_waterunit"); if (wu) waterUnit = wu;
     var md = localStorage.getItem("ff_mode"); if (md === "beginner" || md === "advanced") mode = md;
     var bp = parseInt(localStorage.getItem("ff_bphase")); if (bp === 1 || bp === 2) bPhase = bp;
+    var tg = JSON.parse(localStorage.getItem("ff_targets") || "null"); if (tg) for (var tk in DEFAULT_TARGETS) if (typeof tg[tk] === "number") targets[tk] = tg[tk];
   } catch (e) {}
 }
 
@@ -685,6 +715,88 @@ function totalSets() {
   return n;
 }
 
+function fmtNum(n) { return Number(n).toLocaleString("en-US"); }
+
+function applyTargets() {
+  CAL_GOAL = targets.cal;
+  PRO_GOAL = targets.pro;
+  GOAL_GLASSES = Math.round(targets.water * 1000 / ML_PER_GLASS);
+  var set = function(id, t) { var e = document.getElementById(id); if (e) e.textContent = t; };
+  set("tgCal", fmtNum(targets.cal));
+  set("tgPro", targets.pro + "g");
+  set("tgSteps", fmtNum(targets.steps));
+  set("tgLoss", targets.loss + " kg");
+  set("homeProGoal", targets.pro);
+  for (var i = 0; i < DIET_FIELDS.length; i++) {
+    var f = DIET_FIELDS[i];
+    if (f.k === "cal") f.ph = "target " + targets.cal;
+    if (f.k === "protein") f.ph = "target " + targets.pro;
+    if (f.k === "steps") f.ph = "target " + targets.steps;
+  }
+}
+
+function openTargets() {
+  document.getElementById("scrHome").style.display = "none";
+  document.getElementById("scrTargets").style.display = "block";
+  window.scrollTo(0, 0);
+  document.getElementById("targetMsg").textContent = "";
+  var c = document.getElementById("targetInputs");
+  while (c.firstChild) c.removeChild(c.firstChild);
+  for (var i = 0; i < TARGET_FIELDS.length; i++) {
+    var f = TARGET_FIELDS[i];
+    var wrap = el("div");
+    wrap.style.marginBottom = "14px";
+    var row = el("div", "wt");
+    row.style.marginBottom = "4px";
+    var lbl = el("div", null, f.label + (f.unit ? " (" + f.unit + ")" : ""));
+    lbl.style.cssText = "width:130px;font-size:13px;color:#999;font-weight:700;flex-shrink:0";
+    row.appendChild(lbl);
+    var inp = document.createElement("input");
+    inp.className = "wtinput";
+    inp.type = "text";
+    inp.inputMode = "decimal";
+    inp.id = "tg_" + f.k;
+    inp.value = targets[f.k];
+    row.appendChild(inp);
+    wrap.appendChild(row);
+    var h = el("div", null, f.hint + " &middot; default " + DEFAULT_TARGETS[f.k]);
+    h.style.cssText = "font-size:11px;color:#555;padding-left:140px";
+    wrap.appendChild(h);
+    c.appendChild(wrap);
+  }
+}
+
+function saveTargets() {
+  var next = {}, msg = document.getElementById("targetMsg");
+  for (var i = 0; i < TARGET_FIELDS.length; i++) {
+    var f = TARGET_FIELDS[i], inp = document.getElementById("tg_" + f.k);
+    var v = parseFloat(String(inp.value).replace(",", "."));
+    if (isNaN(v) || v < f.min || v > f.max) {
+      msg.style.color = "#D85A30";
+      msg.textContent = f.label + ": " + f.min + " se " + f.max + " ke beech number likho.";
+      inp.focus();
+      return;
+    }
+    next[f.k] = f.step === "1" ? Math.round(v) : Math.round(v * 100) / 100;
+  }
+  for (var k in next) targets[k] = next[k];
+  applyTargets();
+  saveAll();
+  msg.style.color = "#3DBE8B";
+  msg.textContent = "\u2713 Targets save ho gaye";
+  setTimeout(goHome, 700);
+}
+
+function resetTargets() {
+  for (var i = 0; i < TARGET_FIELDS.length; i++) {
+    var f = TARGET_FIELDS[i];
+    document.getElementById("tg_" + f.k).value = DEFAULT_TARGETS[f.k];
+  }
+  var msg = document.getElementById("targetMsg");
+  msg.style.color = "#888";
+  msg.textContent = "Default values bhar di hain. Save dabao.";
+}
+
 function setMode(m) {
   mode = m;
   saveAll();
@@ -737,6 +849,7 @@ function goHome() {
   document.getElementById("scrDay").style.display = "none";
   document.getElementById("scrWarmup").style.display = "none";
   document.getElementById("scrCool").style.display = "none";
+  document.getElementById("scrTargets").style.display = "none";
   document.getElementById("scrWhoop").style.display = "none";
   document.getElementById("scrDiet").style.display = "none";
   document.getElementById("scrDiary").style.display = "none";
@@ -1301,7 +1414,7 @@ function renderWater() {
   // total in ml/litres
   var ml = glasses * ML_PER_GLASS;
   var totalTxt = (ml >= 1000) ? (ml/1000).toFixed(2).replace(/0$/,"") + " L" : ml + " ml";
-  document.getElementById("waterTotal").textContent = "Total today: " + totalTxt + "  (goal 2 L)";
+  document.getElementById("waterTotal").textContent = "Total today: " + totalTxt + "  (goal " + targets.water + " L)";
 }
 
 function addWater(delta) {
@@ -1419,6 +1532,7 @@ function renderHome() {
 
   document.getElementById("warmupCard").onclick = openWarmup;
   document.getElementById("coolCard").onclick = openCooldown;
+  document.getElementById("targetsCard").onclick = openTargets;
   document.getElementById("whoopCard").onclick = openWhoop;
   document.getElementById("dietCard").onclick = openDiet;
   document.getElementById("diaryCard").onclick = openDiary;
@@ -1644,7 +1758,7 @@ function hashStr(s) {
 function storeByName(n) { return n === "whoop" ? whoop : n === "diet" ? diet : n === "foodLog" ? foodLog : water; }
 
 function buildDocs() {
-  var docs = {settings:{done:done, weights:weights, customFoods:customFoods, waterUnit:waterUnit, restSec:restSec, mode:mode, bPhase:bPhase}};
+  var docs = {settings:{done:done, weights:weights, customFoods:customFoods, waterUnit:waterUnit, restSec:restSec, mode:mode, bPhase:bPhase, targets:targets}};
   for (var i = 0; i < DATE_STORES.length; i++) {
     var name = DATE_STORES[i], st = storeByName(name);
     for (var k in st) {
@@ -1670,6 +1784,7 @@ function applyDocs(docs) {
   if (s.restSec) restSec = s.restSec;
   if (s.mode) mode = s.mode;
   if (s.bPhase) bPhase = s.bPhase;
+  if (s.targets) { for (var tk in DEFAULT_TARGETS) if (typeof s.targets[tk] === "number") targets[tk] = s.targets[tk]; applyTargets(); }
   var stores = {whoop:{}, diet:{}, foodLog:{}, water:{}};
   for (var id in docs) {
     if (id === "settings") continue;
@@ -1887,6 +2002,7 @@ document.addEventListener("visibilitychange", function() {
 loadSyncMeta();
 checkStorage();
 loadAll();
+applyTargets();
  setRest(restSec);
  renderHome();
  renderSyncCard();
@@ -1899,6 +2015,8 @@ window.routineBack = routineBack;
 window.fbSignIn = fbSignIn;
 window.fbSignOut = fbSignOut;
 window.fbSync = fbSync;
+window.saveTargets = saveTargets;
+window.resetTargets = resetTargets;
 window.setPhase = setPhase;
 window.skipTimer = skipTimer;
 window.resetWeek = resetWeek;
