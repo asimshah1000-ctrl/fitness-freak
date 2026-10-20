@@ -2025,7 +2025,7 @@ document.addEventListener("visibilitychange", function() {
 // and the estimate comes back as JSON the user can edit before it goes into the diary.
 var AI_SDK = "https://www.gstatic.com/firebasejs/13.0.0/";
 var AI_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash"];   // second one is a fallback
-// reCAPTCHA v3 site key for Firebase App Check (needed once AI Logic enforces App Check).
+// Fraud Defense (reCAPTCHA Enterprise) site key for Firebase App Check — AI Logic enforces App Check.
 var RECAPTCHA_SITE_KEY = "";
 var aiPromise = null, photoData = null, photoItems = [], photoBusy = false;
 
@@ -2038,7 +2038,7 @@ function loadAI() {
   ]).then(function(m) {
     var appM = m[0], aiM = m[1], acM = m[2];
     var app = appM.initializeApp(FB_CONFIG, "ai");
-    if (acM) acM.initializeAppCheck(app, {provider: new acM.ReCaptchaV3Provider(RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true});
+    if (acM) acM.initializeAppCheck(app, {provider: new acM.ReCaptchaEnterpriseProvider(RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true});
     return {m: aiM, ai: aiM.getAI(app, {backend: new aiM.GoogleAIBackend()})};
   });
   aiPromise.catch(function() { aiPromise = null; });
