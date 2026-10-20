@@ -2024,7 +2024,7 @@ document.addEventListener("visibilitychange", function() {
 // Photo is shrunk on the phone, sent to Gemini through Firebase AI Logic (no API key in the app),
 // and the estimate comes back as JSON the user can edit before it goes into the diary.
 var AI_SDK = "https://www.gstatic.com/firebasejs/13.0.0/";
-var AI_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash"];   // second one is a fallback
+var AI_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"];   // tried in order if one is busy/unavailable
 // Fraud Defense (reCAPTCHA Enterprise) site key for Firebase App Check — AI Logic enforces App Check.
 var RECAPTCHA_SITE_KEY = "6LeT_PctAAAAADVaSwKM10WZ52NBJumV2g4Tx1B1";
 var aiPromise = null, photoData = null, photoItems = [], photoBusy = false;
@@ -2093,7 +2093,8 @@ function aiErrorText(e) {
   var t = String((e && (e.code || "")) + " " + (e && e.message || e));
   if (/app.?check|appcheck|attestation/i.test(t)) return "Firebase App Check setup chahiye (Security > App Check). Mujhe batao, main step bata dunga.";
   if (/api.?not.?enabled|SERVICE_DISABLED|has not been used|is disabled|not been enabled/i.test(t)) return "Firebase console mein AI Services > AI Logic > Get started karo (Gemini Developer API).";
-  if (/429|quota|RESOURCE_EXHAUSTED|rate/i.test(t)) return "AI ki free limit abhi khatam ho gayi. Thori der baad try karo.";
+  if (/\b(500|503)\b|high demand|overloaded|UNAVAILABLE|INTERNAL/i.test(t)) return "Google ka AI is waqt bohot busy hai (sab models try kar liye). 1-2 minute baad 'Dobara nikaalo' dabao.";
+  if (/\b429\b|quota|RESOURCE_EXHAUSTED|rate.?limit/i.test(t)) return "AI ki free limit abhi khatam ho gayi. Thori der baad try karo.";
   if (/load|fetch|network|Failed to fetch|import/i.test(t)) return "Internet check karo, AI load nahi hua.";
   if (/JSON|Unexpected token/i.test(t)) return "AI ka jawab samajh nahi aaya. Dobara try karo.";
   return "AI error: " + t.slice(0, 140);
@@ -2137,7 +2138,11 @@ function runModel(ctx, idx, parts) {
   });
   return model.generateContent(parts).catch(function(e) {
     var t = String(e && e.message || e);
-    if (idx + 1 < AI_MODELS.length && /not.?found|404|not supported|unknown model/i.test(t)) return runModel(ctx, idx + 1, parts);
+    // model missing, busy or rate-limited → try the next model in the list
+    if (idx + 1 < AI_MODELS.length && /not.?found|\b404\b|not supported|unknown model|\b(500|503|429)\b|high demand|overloaded|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(t)) {
+      setPhotoStatus("AI busy tha, doosra model try kar raha hoon...", "#E0A020");
+      return runModel(ctx, idx + 1, parts);
+    }
     throw e;
   });
 }
