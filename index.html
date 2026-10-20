@@ -2092,7 +2092,7 @@ function shrinkImage(file) {
 function aiErrorText(e) {
   var t = String((e && (e.code || "")) + " " + (e && e.message || e));
   if (/app.?check|appcheck|attestation/i.test(t)) return "Firebase App Check setup chahiye (Security > App Check). Mujhe batao, main step bata dunga.";
-  if (/api.?not.?enabled|SERVICE_DISABLED|has not been used|AI Logic|firebasevertexai|generativelanguage/i.test(t)) return "Firebase console mein AI Services > AI Logic > Get started karo (Gemini Developer API).";
+  if (/api.?not.?enabled|SERVICE_DISABLED|has not been used|is disabled|not been enabled/i.test(t)) return "Firebase console mein AI Services > AI Logic > Get started karo (Gemini Developer API).";
   if (/429|quota|RESOURCE_EXHAUSTED|rate/i.test(t)) return "AI ki free limit abhi khatam ho gayi. Thori der baad try karo.";
   if (/load|fetch|network|Failed to fetch|import/i.test(t)) return "Internet check karo, AI load nahi hua.";
   if (/JSON|Unexpected token/i.test(t)) return "AI ka jawab samajh nahi aaya. Dobara try karo.";
@@ -2163,7 +2163,9 @@ function analyzePhoto() {
     else setPhotoStatus("&#9888; Yeh AI ka <b>andaza</b> hai" + (conf ? " (yaqeen: " + conf + ")" : "") + ". Numbers theek kar sakte ho. " + escHtml(j.notes || ""), "#AAA");
     renderPhotoResults();
   }).catch(function(e) {
-    setPhotoStatus("&#9888; " + escHtml(aiErrorText(e)), "#FF6B6B");
+    var raw = String((e && e.code ? e.code + ": " : "") + (e && e.message || e));
+    setPhotoStatus("&#9888; " + escHtml(aiErrorText(e)) +
+      "<div style='font-size:11px;color:#777;margin-top:6px;word-break:break-word'>Detail: " + escHtml(raw.slice(0, 400)) + "</div>", "#FF6B6B");
   }).then(function() {
     photoBusy = false; go.disabled = false; go.textContent = "🔍 Dobara nikaalo";
   });
